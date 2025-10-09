@@ -1066,6 +1066,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                         return false;
                     }
 
+                    */
+
                     console.log('All validations passed, showing loading overlay');
 
                     // Show loading overlay
