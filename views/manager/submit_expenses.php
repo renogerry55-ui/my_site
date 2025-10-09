@@ -689,7 +689,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
         // Add expense row
         function addExpense(type) {
             console.log('🎯 addExpense() called with type:', type);
-            alert('Button clicked! Type: ' + type);
 
             const container = type === 'mp_berhad' ? document.getElementById('mpBerhadExpenses') : document.getElementById('marketExpenses');
             const categories = type === 'mp_berhad' ? mpBerhadCategories : marketCategories;
