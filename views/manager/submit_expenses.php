@@ -821,7 +821,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
             const amountInput = row.querySelector('.expense-input');
 
             if (summaryDiv && categorySelect && amountInput) {
-                const categoryText = categorySelect.options[categorySelect.selectedIndex]?.text || 'No category';
+                const hasSelectedOption =
+                    categorySelect.selectedIndex !== undefined &&
+                    categorySelect.selectedIndex !== null &&
+                    categorySelect.selectedIndex >= 0 &&
+                    categorySelect.options &&
+                    categorySelect.options.length > categorySelect.selectedIndex;
+                const categoryText = hasSelectedOption
+                    ? categorySelect.options[categorySelect.selectedIndex].text
+                    : 'No category';
                 const amount = parseFloat(amountInput.value) || 0;
 
                 if (categorySelect.value && amount > 0) {
