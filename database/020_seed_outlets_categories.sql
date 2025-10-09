@@ -24,8 +24,6 @@ INSERT INTO `outlets` (`outlet_code`, `outlet_name`, `location`, `manager_id`, `
 
 INSERT INTO `expense_categories` (`category_name`, `category_type`, `description`, `status`) VALUES
 -- MP/BERHAD Expenses
-('MP', 'mp_berhad', 'MP claimed expenses', 'active'),
-('BERHAD', 'mp_berhad', 'BERHAD claimed expenses', 'active'),
 ('Staff Salary', 'mp_berhad', 'Monthly staff salaries and wages', 'active'),
 ('Rent', 'mp_berhad', 'Shop rental payment', 'active'),
 ('Utilities', 'mp_berhad', 'Electricity, water, internet bills', 'active'),
