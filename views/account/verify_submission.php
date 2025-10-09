@@ -166,24 +166,34 @@ if (!empty($managers)) {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 20px;
         }
 
         .header h1 {
             font-size: 24px;
         }
 
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-link,
         .logout-btn {
-            background-color: rgba(255,255,255,0.2);
             color: white;
-            padding: 8px 20px;
+            padding: 8px 18px;
             border: 1px solid rgba(255,255,255,0.3);
             border-radius: 5px;
             text-decoration: none;
             font-size: 14px;
-            transition: background-color 0.3s;
+            background-color: rgba(255,255,255,0.18);
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        .logout-btn:hover {
+        .nav-link:hover,
+        .logout-btn:hover,
+        .nav-link.active {
             background-color: rgba(255,255,255,0.3);
         }
 
@@ -394,7 +404,11 @@ if (!empty($managers)) {
     <div class="header">
         <div class="header-content">
             <h1><?php echo htmlspecialchars(APP_NAME); ?> &mdash; Account</h1>
-            <a href="/my_site/auth/logout.php" class="logout-btn">Logout</a>
+            <div class="nav-links">
+                <a href="dashboard.php" class="nav-link">Dashboard</a>
+                <a href="verify_submission.php" class="nav-link active">Verify Submissions</a>
+                <a href="/my_site/auth/logout.php" class="logout-btn">Logout</a>
+            </div>
         </div>
     </div>
 
