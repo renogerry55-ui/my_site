@@ -1,0 +1,44 @@
+================================================================================
+DATABASE IMPORT ORDER - my_site
+================================================================================
+
+IMPORTANT: Import these SQL files in phpMyAdmin in the exact order listed below.
+
+ORDER:
+------
+
+1. 001_create_users.sql
+   - Creates users table
+   - Sets up authentication system
+
+2. 010_seed_initial_users.sql
+   - Seeds initial users (Manager, Account, CEO, Admin)
+   - Password for all: Password!234
+
+3. 002_create_manager_tables.sql
+   - Creates outlets table
+   - Creates expense_categories table
+   - Creates daily_submissions table
+   - Creates expenses table
+
+4. 020_seed_outlets_categories.sql
+   - Seeds 4 outlets (Outlet A, B, C, D)
+   - Seeds MP/BERHAD expense categories (9 categories)
+   - Seeds Market expense categories (8 categories)
+
+================================================================================
+AFTER IMPORT:
+================================================================================
+
+Test login:
+- URL: http://localhost/my_site
+- Manager: manager@mysite.com / Password!234
+- Account: account@mysite.com / Password!234
+- CEO: ceo@mysite.com / Password!234
+- Admin: admin@mysite.com / Password!234
+
+Manager Features:
+- Submit Daily Expenses: /views/manager/submit_expenses.php
+- View History: /views/manager/view_history.php
+
+================================================================================

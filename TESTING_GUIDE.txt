@@ -1,0 +1,80 @@
+================================================================================
+SUBMISSION TESTING GUIDE
+================================================================================
+
+STEP 1: Test the submission form
+---------------------------------
+1. Login as manager (manager@mysite.com / Password!234)
+2. Go to Submit Expenses page
+3. Open Browser Console (F12 → Console tab)
+4. Fill the form:
+   - Select an outlet
+   - Enter income values (all fields)
+   - Click "+ Add MP/BERHAD Expense"
+   - Fill category, amount, upload a receipt image/PDF
+   - Click "Submit Daily Report"
+
+STEP 2: Check console for errors
+---------------------------------
+In the browser console, you should see:
+✅ "Form submit triggered"
+✅ "MP expenses: 1 Market expenses: 0"
+✅ "Form submitting..."
+
+If you see errors, copy and paste them.
+
+STEP 3: Check for error messages
+---------------------------------
+After clicking submit, check:
+- Does the loading overlay appear?
+- Does it redirect to history page?
+- OR does it show an error message?
+
+STEP 4: Common Issues & Fixes
+-------------------------------
+❌ "Please add at least one expense"
+   → You must add at least 1 MP/BERHAD or Market expense
+
+❌ "Receipt/voucher is required"
+   → Make sure you upload a file for each expense
+
+❌ "Failed to create upload directory"
+   → Run: mkdir C:\xampp\htdocs\my_site\uploads\receipts
+
+❌ "Upload directory is not writable"
+   → Check folder permissions
+
+❌ "Invalid file type"
+   → Only JPG, PNG, PDF allowed
+
+❌ "File size exceeds 5MB"
+   → Reduce file size
+
+STEP 5: Verify in database
+---------------------------
+After successful submission, check phpMyAdmin:
+- Table: daily_submissions → Should have 1 new row
+- Table: expenses → Should have your expense rows
+- Check: uploads/receipts/ folder → Should have uploaded files
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+If submit button does nothing:
+1. Check browser console for JavaScript errors
+2. Check if outlets exist in database (Table: outlets)
+3. Check if expense categories exist (Table: expense_categories)
+
+If you get database errors:
+1. Make sure you imported all SQL files:
+   - 001_create_users.sql
+   - 010_seed_initial_users.sql
+   - 002_create_manager_tables.sql
+   - 020_seed_outlets_categories.sql
+
+If file upload fails:
+1. Create folder: C:\xampp\htdocs\my_site\uploads\receipts
+2. Give full permissions to the folder
+
+================================================================================

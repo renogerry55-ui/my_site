@@ -1,0 +1,132 @@
+================================================================================
+AUTO-EXPAND INCOMPLETE EXPENSES FEATURE
+================================================================================
+
+✨ WHAT HAPPENS WHEN YOU CLICK "SUBMIT" WITH INCOMPLETE EXPENSES:
+================================================================================
+
+1. ✅ VALIDATION RUNS
+   - System checks all expenses
+   - Identifies which ones are incomplete
+   - Identifies which specific fields are missing
+
+2. 🔍 AUTO-EXPAND INCOMPLETE EXPENSES
+   - All incomplete expense cards automatically expand
+   - Collapsed expenses stay collapsed if they're complete
+
+3. 🎯 SCROLL TO FIRST INCOMPLETE EXPENSE
+   - Page smoothly scrolls to the first incomplete expense
+   - Brings it into the center of the screen
+
+4. ⚠️ VISUAL HIGHLIGHTING
+   - The first incomplete expense card gets:
+     • RED border (3px solid)
+     • Red glow shadow
+     • Flashes for 2 seconds then fades
+
+5. 🔴 FIELD-LEVEL HIGHLIGHTING
+   - Each incomplete field gets:
+     • RED border (2px solid)
+     • Pink background (#fff5f5)
+
+   Missing Category:     [RED BORDER DROPDOWN]
+   Missing Amount:       [RED BORDER INPUT]
+   Missing Receipt:      [RED BORDER FILE INPUT]
+
+6. 📋 DETAILED ERROR MESSAGE
+   Alert shows exactly what's missing:
+
+   "⚠️ Please Complete All Expense Details!
+
+    Found 2 incomplete expense(s):
+
+    1. ▼ MP/BERHAD Expense #1: Missing category, Missing receipt/voucher
+    2. ▼ Market Expense #2: Missing or invalid amount
+
+    ✅ Incomplete expenses have been expanded and highlighted.
+    Please scroll up to complete them."
+
+================================================================================
+📖 EXAMPLE SCENARIOS
+================================================================================
+
+Scenario 1: User adds 3 expenses but only completes 2
+------------------------------------------------------
+- Expense #1: Complete ✅ (stays collapsed)
+- Expense #2: Missing receipt ❌ (auto-expands, highlighted)
+- Expense #3: Complete ✅ (stays collapsed)
+
+Result:
+✅ Expense #2 expands
+✅ Scrolls to Expense #2
+✅ Receipt field has RED border
+✅ Alert shows: "MP/BERHAD Expense #2: Missing receipt/voucher"
+
+Scenario 2: User adds 1 expense but forgets everything
+------------------------------------------------------
+- Expense #1: Missing category, amount, receipt ❌
+
+Result:
+✅ Expense #1 expands (already open)
+✅ Category field: RED border + pink background
+✅ Amount field: RED border + pink background
+✅ Receipt field: RED border + pink background
+✅ Alert shows all 3 missing fields
+
+Scenario 3: User collapses expenses after adding them
+-----------------------------------------------------
+- Expense #1: Collapsed but complete ✅
+- Expense #2: Collapsed but missing receipt ❌
+- Expense #3: Collapsed but missing category ❌
+
+User clicks "Submit Daily Report"
+
+Result:
+✅ Expense #1 stays collapsed
+✅ Expense #2 expands (missing receipt highlighted)
+✅ Expense #3 expands (missing category highlighted)
+✅ Scrolls to Expense #2 (first incomplete)
+✅ Expense #2 flashes with red border
+
+================================================================================
+🎨 VISUAL INDICATORS
+================================================================================
+
+Before Submit (All Collapsed):
+[▶ MP/BERHAD Expense #1]
+[▶ MP/BERHAD Expense #2]
+[▶ Market Expense #1]
+
+After Submit (Incomplete Expanded):
+[▶ MP/BERHAD Expense #1]    ← Complete, stays collapsed
+
+[▼ MP/BERHAD Expense #2]    ← EXPANDED & HIGHLIGHTED
+   Category: [────────]      ← Normal field
+   Amount: [──────────]      ← Normal field
+   Receipt: [━━━━━━━━━]      ← RED BORDER (missing!)
+
+[▼ Market Expense #1]        ← EXPANDED
+   Category: [━━━━━━━━━]     ← RED BORDER (missing!)
+   Amount: [──────────]       ← Normal field
+   Receipt: [──────────]      ← Normal field
+
+================================================================================
+🚀 USER EXPERIENCE
+================================================================================
+
+OLD WAY (Before this feature):
+❌ Alert says "incomplete expenses"
+❌ User has to manually expand each expense
+❌ User has to guess which fields are missing
+❌ User has to scroll around to find issues
+❌ Frustrating!
+
+NEW WAY (With this feature):
+✅ Alert shows EXACTLY what's missing
+✅ Incomplete expenses auto-expand
+✅ Missing fields highlighted in RED
+✅ Auto-scrolls to first problem
+✅ Visual flash shows which expense to fix first
+✅ Easy to fix!
+
+================================================================================

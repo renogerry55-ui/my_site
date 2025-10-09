@@ -1,0 +1,112 @@
+================================================================================
+SUBMISSION FORM VALIDATION GUIDE
+================================================================================
+
+✅ VALIDATION FEATURES IMPLEMENTED
+================================================================================
+
+1. EXPENSE REQUIREMENT
+   - At least 1 expense (MP/BERHAD or Market) must be added
+   - Alert: "⚠️ Please add at least one expense before submitting."
+
+2. RECEIPT/VOUCHER VALIDATION
+   - Each expense MUST have a receipt uploaded
+   - Alert shows which expenses are missing receipts:
+     "⚠️ Missing Receipt/Voucher Upload!
+
+      The following expenses need receipts:
+      1. MP/BERHAD Expense #1
+      2. Market Expense #2
+
+      Please upload a receipt (JPG/PNG/PDF) for each expense."
+
+3. EXPENSE DETAILS VALIDATION
+   - Each expense must have:
+     ✓ Category selected
+     ✓ Amount entered (greater than 0)
+   - Alert shows incomplete expenses:
+     "⚠️ Incomplete Expense Details!
+
+      MP/BERHAD Expense #1 - Missing category
+      Market Expense #2 - Missing or invalid amount
+
+      Please complete all expense details."
+
+================================================================================
+🎨 VISUAL INDICATORS
+================================================================================
+
+FILE UPLOAD FIELD:
+------------------
+❌ Before Upload:
+   - RED dashed border
+   - Pink background (#fff5f5)
+   - Text: "⚠️ Required: JPG, PNG, or PDF (Max 5MB)"
+
+✅ After Upload:
+   - GREEN solid border
+   - Light green background (#f0fff0)
+   - Text: "✅ File selected: receipt.jpg (0.45 MB)"
+
+REQUIRED FIELDS:
+----------------
+- Red asterisk (*) on labels
+- "Upload Receipt" label in RED color
+- File upload icon 📎
+
+================================================================================
+📋 SUBMISSION FLOW
+================================================================================
+
+Step 1: Fill Basic Info
+   ✓ Select outlet
+   ✓ Enter submission date
+
+Step 2: Enter Income
+   ✓ Berhad Sales
+   ✓ MP Sales - Coba
+   ✓ MP Sales - Perdana
+   ✓ Market Sales
+   → Auto-calculates total
+
+Step 3: Add Expenses
+   ✓ Click "+ Add MP/BERHAD Expense" or "+ Add Market Expense"
+   ✓ Select category
+   ✓ Enter amount
+   ✓ Upload receipt (field turns GREEN when uploaded)
+   ✓ Add description (optional)
+
+Step 4: Submit
+   ✓ Click "Submit Daily Report"
+   ✓ Validation checks all fields
+   ✓ If valid: Loading overlay appears
+   ✓ Redirects to history page on success
+
+================================================================================
+🐛 COMMON ISSUES & SOLUTIONS
+================================================================================
+
+Issue: "Please add at least one expense"
+Solution: Click "+ Add MP/BERHAD Expense" or "+ Add Market Expense"
+
+Issue: "Missing Receipt/Voucher Upload"
+Solution:
+   1. Expand the expense card
+   2. Click on the red upload field
+   3. Select JPG/PNG/PDF file
+   4. Verify field turns GREEN
+
+Issue: Button does nothing
+Solution:
+   1. Open browser console (F12)
+   2. Click submit button
+   3. Check console for error messages
+   4. Verify all required fields are filled
+
+Issue: File won't upload
+Solution:
+   1. Check file is JPG, PNG, or PDF
+   2. Check file is less than 5MB
+   3. Try a different file
+
+================================================================================
