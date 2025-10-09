@@ -916,10 +916,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
         }
 
         // Add event listeners to income inputs
-        console.log('🔧 JavaScript file loaded!');
+        console.log('JavaScript file loaded');
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 DOMContentLoaded fired!');
+            console.log('DOMContentLoaded fired');
 
             // Add duplicate check listeners
             const outletSelect = document.querySelector('select[name="outlet_id"]');
@@ -949,7 +949,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                 console.log('Form found, attaching submit listener');
 
                 form.addEventListener('submit', function(e) {
-                    console.log('✅ Form submit event triggered!');
+                    console.log('Form submit event triggered');
 
                     // Validate form has expenses
                     const mpExpenses = document.getElementById('mpBerhadExpenses').children.length;
@@ -959,13 +959,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
 
                     if (mpExpenses === 0 && marketExpenses === 0) {
                         e.preventDefault();
-                        alert('⚠️ Please add at least one expense before submitting.');
-                        console.log('❌ Form submission prevented - no expenses');
+                        alert('Please add at least one expense before submitting.');
+                        console.log('Form submission prevented - no expenses');
                         return false;
                     }
 
                     // TEMPORARY: Skip detailed validation for testing
-                    console.log('⚠️ Skipping detailed validation - allowing submission');
+                    console.log('Skipping detailed validation - allowing submission');
                     return true;
 
                     /* DETAILED VALIDATION - COMMENTED OUT FOR NOW */
@@ -1048,17 +1048,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                             }, 2000);
                         }
 
-                        const message = '⚠️ Please Complete All Expense Details!\n\n' +
+                        const message = 'Please Complete All Expense Details!\n\n' +
                                        `Found ${incompleteExpenseRows.length} incomplete expense(s):\n\n` +
                                        errorMessages.map((msg, i) => `${i + 1}. ${msg}`).join('\n') +
-                                       '\n\n✅ Incomplete expenses have been expanded and highlighted.\nPlease scroll up to complete them.';
+                                       '\n\nIncomplete expenses have been expanded and highlighted.\nPlease scroll up to complete them.';
 
                         alert(message);
-                        console.log('❌ Form submission prevented - incomplete expenses:', errorMessages);
+                        console.log('Form submission prevented - incomplete expenses:', errorMessages);
                         return false;
                     }
 
-                    console.log('✅ All validations passed, showing loading overlay');
+                    console.log('All validations passed, showing loading overlay');
 
                     // Show loading overlay
                     document.getElementById('loadingOverlay').classList.add('active');
@@ -1070,17 +1070,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                         submitBtn.textContent = 'Submitting...';
                     }
 
-                    console.log('✅ Form submitting to server...');
+                    console.log('Form submitting to server...');
                     // Form will submit normally
                 });
 
-                console.log('✅ Form submit listener attached successfully');
+                console.log('Form submit listener attached successfully');
             }
 
-            console.log('✅ DOMContentLoaded complete');
+            console.log('DOMContentLoaded complete');
         });
 
-        console.log('✅ JavaScript execution complete');
+        console.log('JavaScript execution complete');
     </script>
 </body>
 </html>
