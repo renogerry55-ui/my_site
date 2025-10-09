@@ -340,6 +340,33 @@ if (!empty($managers)) {
             margin-bottom: 15px;
         }
 
+        .outlet-actions {
+            margin-top: 15px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .verify-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .verify-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(17,153,142,0.25);
+        }
+
         .outlet-header {
             display: flex;
             justify-content: space-between;
@@ -626,6 +653,10 @@ if (!empty($managers)) {
                                         <?php else : ?>
                                             <p style="font-size:13px; color:#555;">No expenses recorded for this submission.</p>
                                         <?php endif; ?>
+                                    </div>
+
+                                    <div class="outlet-actions">
+                                        <a class="verify-button" href="outlet_verification.php?submission_id=<?php echo (int) $submission['id']; ?>">Do Verification</a>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
