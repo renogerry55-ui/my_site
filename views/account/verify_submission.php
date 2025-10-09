@@ -53,6 +53,8 @@ if ($pendingRows) {
                 'total_income'   => 0,
                 'total_expenses' => 0,
                 'total_net'      => 0,
+                'mp_berhad_expenses' => 0,
+                'market_expenses'    => 0,
                 'earliest_date'  => $row['submission_date'],
                 'latest_date'    => $row['submission_date'],
                 'submissions'    => []
@@ -84,7 +86,14 @@ if ($pendingRows) {
             'total_income'     => (float) $row['total_income'],
             'total_expenses'   => (float) $row['total_expenses'],
             'net_amount'       => (float) $row['net_amount'],
-            'expenses'         => []
+            'expenses'         => [
+                'mp_berhad' => [],
+                'market'    => []
+            ],
+            'expense_totals'   => [
+                'mp_berhad' => 0,
+                'market'    => 0
+            ]
         ];
 
         $submissionIds[] = $submissionId;
@@ -99,6 +108,7 @@ if (!empty($submissionIds)) {
         "SELECT
             e.submission_id,
             ec.category_name,
+            ec.category_type,
             e.amount,
             e.description
         FROM expenses e
@@ -113,11 +123,29 @@ if (!empty($submissionIds)) {
             $submissionId = (int) $expense['submission_id'];
             foreach ($managers as &$manager) {
                 if (isset($manager['submissions'][$submissionId])) {
-                    $manager['submissions'][$submissionId]['expenses'][] = [
+                    $type = $expense['category_type'] ?? 'other';
+                    $amount = (float) $expense['amount'];
+
+                    if (!isset($manager['submissions'][$submissionId]['expenses'][$type])) {
+                        $manager['submissions'][$submissionId]['expenses'][$type] = [];
+                    }
+
+                    if (!isset($manager['submissions'][$submissionId]['expense_totals'][$type])) {
+                        $manager['submissions'][$submissionId]['expense_totals'][$type] = 0;
+                    }
+
+                    $manager['submissions'][$submissionId]['expenses'][$type][] = [
                         'category'    => $expense['category_name'],
-                        'amount'      => (float) $expense['amount'],
+                        'amount'      => $amount,
                         'description' => $expense['description']
                     ];
+                    $manager['submissions'][$submissionId]['expense_totals'][$type] += $amount;
+
+                    if ($type === 'mp_berhad') {
+                        $manager['mp_berhad_expenses'] += $amount;
+                    } elseif ($type === 'market') {
+                        $manager['market_expenses'] += $amount;
+                    }
                     break;
                 }
             }
@@ -355,6 +383,45 @@ if (!empty($managers)) {
             color: #0b6b60;
         }
 
+        .expense-groups {
+            display: grid;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .expense-groups {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .expense-group {
+            background: #f2fcf8;
+            border: 1px solid #d2f5e8;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .expense-group h6 {
+            font-size: 14px;
+            color: #0b6b60;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .expense-group-total {
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #0b6b60;
+            text-align: right;
+        }
+
+        .expense-group p {
+            font-size: 13px;
+            color: #555;
+        }
+
         .expenses-table {
             width: 100%;
             border-collapse: collapse;
@@ -447,6 +514,14 @@ if (!empty($managers)) {
                                     <strong>RM <?php echo number_format($manager['total_expenses'], 2); ?></strong>
                                 </div>
                                 <div class="summary-item">
+                                    <span>MP/Berhad Expenses</span>
+                                    <strong>RM <?php echo number_format($manager['mp_berhad_expenses'], 2); ?></strong>
+                                </div>
+                                <div class="summary-item">
+                                    <span>Market Expenses</span>
+                                    <strong>RM <?php echo number_format($manager['market_expenses'], 2); ?></strong>
+                                </div>
+                                <div class="summary-item">
                                     <span>Net Amount</span>
                                     <strong>RM <?php echo number_format($manager['total_net'], 2); ?></strong>
                                 </div>
@@ -489,6 +564,14 @@ if (!empty($managers)) {
                                             <strong>RM <?php echo number_format($submission['total_expenses'], 2); ?></strong>
                                         </div>
                                         <div class="metric">
+                                            <span>MP/Berhad Expenses</span>
+                                            <strong>RM <?php echo number_format($submission['expense_totals']['mp_berhad'] ?? 0, 2); ?></strong>
+                                        </div>
+                                        <div class="metric">
+                                            <span>Market Expenses</span>
+                                            <strong>RM <?php echo number_format($submission['expense_totals']['market'] ?? 0, 2); ?></strong>
+                                        </div>
+                                        <div class="metric">
                                             <span>Net Amount</span>
                                             <strong>RM <?php echo number_format($submission['net_amount'], 2); ?></strong>
                                         </div>
@@ -496,25 +579,50 @@ if (!empty($managers)) {
 
                                     <div class="expenses-section">
                                         <h5 style="color:#0b6b60; margin-bottom:6px;">Expenses</h5>
-                                        <?php if (!empty($submission['expenses'])) : ?>
-                                            <table class="expenses-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Category</th>
-                                                        <th>Description</th>
-                                                        <th style="width:120px; text-align:right;">Amount (RM)</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php foreach ($submission['expenses'] as $expense) : ?>
-                                                        <tr>
-                                                            <td><?php echo htmlspecialchars($expense['category']); ?></td>
-                                                            <td><?php echo htmlspecialchars($expense['description'] ?? ''); ?></td>
-                                                            <td style="text-align:right;"><?php echo number_format($expense['amount'], 2); ?></td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                </tbody>
-                                            </table>
+                                        <?php
+                                            $expenseGroups = [
+                                                'mp_berhad' => 'MP/Berhad Expenses',
+                                                'market'    => 'Market Expenses'
+                                            ];
+                                            $hasExpenses = false;
+                                            foreach ($expenseGroups as $typeKey => $label) {
+                                                if (!empty($submission['expenses'][$typeKey])) {
+                                                    $hasExpenses = true;
+                                                    break;
+                                                }
+                                            }
+                                        ?>
+                                        <?php if ($hasExpenses) : ?>
+                                            <div class="expense-groups">
+                                                <?php foreach ($expenseGroups as $typeKey => $label) : ?>
+                                                    <div class="expense-group">
+                                                        <h6><?php echo htmlspecialchars($label); ?></h6>
+                                                        <?php if (!empty($submission['expenses'][$typeKey])) : ?>
+                                                            <table class="expenses-table">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Category</th>
+                                                                        <th>Description</th>
+                                                                        <th style="width:120px; text-align:right;">Amount (RM)</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php foreach ($submission['expenses'][$typeKey] as $expense) : ?>
+                                                                        <tr>
+                                                                            <td><?php echo htmlspecialchars($expense['category']); ?></td>
+                                                                            <td><?php echo htmlspecialchars($expense['description'] ?? ''); ?></td>
+                                                                            <td style="text-align:right;">RM <?php echo number_format($expense['amount'], 2); ?></td>
+                                                                        </tr>
+                                                                    <?php endforeach; ?>
+                                                                </tbody>
+                                                            </table>
+                                                            <div class="expense-group-total">Total: RM <?php echo number_format($submission['expense_totals'][$typeKey] ?? 0, 2); ?></div>
+                                                        <?php else : ?>
+                                                            <p>No <?php echo htmlspecialchars($label); ?> recorded.</p>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
                                         <?php else : ?>
                                             <p style="font-size:13px; color:#555;">No expenses recorded for this submission.</p>
                                         <?php endif; ?>
