@@ -730,8 +730,25 @@ if (!empty($managers)) {
                             </div>
                         <?php endif; ?>
 
-                        <div class="manager-summary">
-                            <div class="manager-summary-title">Manager Summary</div>
+        <?php if (empty($managers)) : ?>
+            <div class="empty-state">
+                <h3>No Pending Submissions</h3>
+                <p>Managers have not submitted any pending reports for review.</p>
+            </div>
+        <?php else : ?>
+            <div class="manager-grid">
+                <?php foreach ($managers as $manager) : ?>
+                    <div class="manager-card" data-manager-id="<?php echo (int) $manager['manager_id']; ?>">
+                        <div class="manager-header">
+                            <div>
+                                <h3><?php echo htmlspecialchars($manager['manager_name']); ?></h3>
+                                <div class="manager-meta">
+                                    <div>Email: <?php echo htmlspecialchars($manager['manager_email']); ?></div>
+                                    <div>Pending Submissions: <?php echo count($manager['submissions']); ?></div>
+                                    <div>Outlets Involved: <?php echo (int) $manager['outlet_count']; ?></div>
+                                    <div>Submission Range: <?php echo htmlspecialchars(date('M j, Y', strtotime($manager['earliest_date']))); ?> &ndash; <?php echo htmlspecialchars(date('M j, Y', strtotime($manager['latest_date']))); ?></div>
+                                </div>
+                            </div>
                             <div class="summary-metrics">
                                 <div class="summary-item">
                                     <span>Total Income</span>
