@@ -403,7 +403,7 @@ $overall['outlet_count'] = count($overallOutletIds);
                     <strong>RM <?php echo number_format($overall['total_berhad_sales'], 2); ?></strong>
                 </div>
                 <div class="summary-card">
-                    <span>MP/Berhad Expenses Submitted</span>
+                    <span>Berhad Player claimed</span>
                     <strong>RM <?php echo number_format($overall['total_mp_berhad_expenses'], 2); ?></strong>
                 </div>
                 <div class="summary-card">
@@ -436,7 +436,7 @@ $overall['outlet_count'] = count($overallOutletIds);
                                     Total Berhad Sales<br><strong>RM <?php echo number_format($manager['total_berhad'], 2); ?></strong>
                                 </div>
                                 <div class="manager-summary-item">
-                                    MP/Berhad Expenses<br><strong>RM <?php echo number_format($manager['total_mp_berhad'], 2); ?></strong>
+                                    Berhad Player claimed<br><strong>RM <?php echo number_format($manager['total_mp_berhad'], 2); ?></strong>
                                 </div>
             </div>
                         </div>
@@ -447,7 +447,7 @@ $overall['outlet_count'] = count($overallOutletIds);
                                     <th>Outlet</th>
                                     <th>Submission Date</th>
                                     <th>Berhad Sales (RM)</th>
-                                    <th>MP/Berhad Expenses (RM)</th>
+                                    <th>Berhad Player claimed (RM)</th>
                                     <th>Net Amount (RM)</th>
                                 </tr>
                             </thead>
