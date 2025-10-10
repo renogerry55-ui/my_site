@@ -393,8 +393,8 @@ if (!empty($managers)) {
 
         .manager-header {
             display: flex;
-            justify-content: space-between;
-            gap: 15px;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .manager-header h3 {
@@ -408,18 +408,33 @@ if (!empty($managers)) {
             line-height: 1.4;
         }
 
+        .manager-summary {
+            background: #f8fdfb;
+            border: 1px solid #d2f5e8;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .manager-summary-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #11998e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
         .summary-metrics {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-width: 150px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
         }
 
         .summary-item {
-            background: #f8fdfb;
+            background: white;
             border: 1px solid #d2f5e8;
             border-radius: 8px;
-            padding: 10px 12px;
+            padding: 12px;
         }
 
         .summary-item span {
@@ -614,13 +629,8 @@ if (!empty($managers)) {
         }
 
         @media (max-width: 768px) {
-            .manager-header {
-                flex-direction: column;
-            }
-
             .summary-metrics {
-                flex-direction: row;
-                flex-wrap: wrap;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             }
         }
     </style>
@@ -687,15 +697,17 @@ if (!empty($managers)) {
                 <?php foreach ($managers as $manager) : ?>
                     <div class="manager-card" data-manager-id="<?php echo (int) $manager['manager_id']; ?>">
                         <div class="manager-header">
-                            <div>
-                                <h3><?php echo htmlspecialchars($manager['manager_name']); ?></h3>
-                                <div class="manager-meta">
-                                    <div>Email: <?php echo htmlspecialchars($manager['manager_email']); ?></div>
-                                    <div>Pending Submissions: <?php echo count($manager['submissions']); ?></div>
-                                    <div>Outlets Involved: <?php echo (int) $manager['outlet_count']; ?></div>
-                                    <div>Submission Range: <?php echo htmlspecialchars(date('M j, Y', strtotime($manager['earliest_date']))); ?> &ndash; <?php echo htmlspecialchars(date('M j, Y', strtotime($manager['latest_date']))); ?></div>
-                                </div>
+                            <h3><?php echo htmlspecialchars($manager['manager_name']); ?></h3>
+                            <div class="manager-meta">
+                                <div>Email: <?php echo htmlspecialchars($manager['manager_email']); ?></div>
+                                <div>Pending Submissions: <?php echo count($manager['submissions']); ?></div>
+                                <div>Outlets Involved: <?php echo (int) $manager['outlet_count']; ?></div>
+                                <div>Submission Range: <?php echo htmlspecialchars(date('M j, Y', strtotime($manager['earliest_date']))); ?> &ndash; <?php echo htmlspecialchars(date('M j, Y', strtotime($manager['latest_date']))); ?></div>
                             </div>
+                        </div>
+
+                        <div class="manager-summary">
+                            <div class="manager-summary-title">Manager Summary</div>
                             <div class="summary-metrics">
                                 <div class="summary-item">
                                     <span>Total Income</span>
