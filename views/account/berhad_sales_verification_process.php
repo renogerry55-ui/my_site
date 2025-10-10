@@ -322,7 +322,7 @@ if ($submission) {
                         <div class="value">RM <?php echo number_format((float) $submission['berhad_sales'], 2); ?></div>
                     </div>
                     <div class="stat">
-                        <div class="label">MP Berhad Expenses</div>
+                        <div class="label">BERHAD CLAIMED</div>
                         <div class="value">RM <?php echo number_format($totalMpBerhadExpenses, 2); ?></div>
                     </div>
                     <div class="stat">
