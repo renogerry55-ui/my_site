@@ -151,7 +151,6 @@ $user = getCurrentUser();
             <div class="nav-links">
                 <a href="dashboard.php" class="nav-link">Dashboard</a>
                 <a href="verify_submission.php" class="nav-link">Verify Submissions</a>
-                <a href="berhad_sales_verification.php" class="nav-link">Berhad Sales</a>
                 <a href="/my_site/auth/logout.php" class="logout-btn">Logout</a>
             </div>
         </div>
