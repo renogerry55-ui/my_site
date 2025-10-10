@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 09, 2025 at 10:36 AM
+-- Generation Time: Oct 10, 2025 at 01:33 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,29 @@ SET time_zone = "+00:00";
 --
 -- Database: `br`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `berhad_external_sales_data`
+--
+
+CREATE TABLE `berhad_external_sales_data` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `submission_id` int(11) UNSIGNED NOT NULL,
+  `row_index` int(11) UNSIGNED NOT NULL,
+  `agent_identifier` varchar(100) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `level` varchar(100) DEFAULT NULL,
+  `deposit_count` varchar(100) DEFAULT NULL,
+  `total_deposit` varchar(100) DEFAULT NULL,
+  `withdraw_count` varchar(100) DEFAULT NULL,
+  `total_withdraw` varchar(100) DEFAULT NULL,
+  `total` varchar(100) DEFAULT NULL,
+  `saved_by` int(11) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -51,6 +74,16 @@ CREATE TABLE `daily_submissions` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `daily_submissions`
+--
+
+INSERT INTO `daily_submissions` (`id`, `submission_code`, `batch_code`, `outlet_id`, `manager_id`, `submission_date`, `berhad_sales`, `mp_coba_sales`, `mp_perdana_sales`, `market_sales`, `total_income`, `total_expenses`, `net_amount`, `status`, `verified_by`, `verified_at`, `submitted_to_hq_at`, `rejection_reason`, `notes`, `created_at`, `updated_at`) VALUES
+(7, 'SUB-20251009-001-1E19', 'BATCH-20251009-1-42DCF6', 1, 1, '2025-10-09', 100.00, 50.00, 50.00, 25.00, 225.00, 30.00, 195.00, 'pending', NULL, NULL, '2025-10-09 18:34:17', NULL, '', '2025-10-09 08:50:20', '2025-10-09 10:34:17'),
+(8, 'SUB-20251009-002-1015', 'BATCH-20251009-1-42DCF6', 2, 1, '2025-10-09', 23123.00, 231231.00, 123123.00, 23123.00, 400600.00, 147870.00, 252730.00, 'pending', NULL, NULL, '2025-10-09 18:34:17', NULL, '', '2025-10-09 10:22:59', '2025-10-09 10:34:17'),
+(9, 'SUB-20251009-003-FAE3', 'BATCH-20251009-1-C1268B', 3, 1, '2025-10-09', 1213123.00, 231231.00, 231231.00, 31232.00, 1706817.00, 2443.00, 1704374.00, 'pending', NULL, NULL, '2025-10-09 20:07:30', NULL, 'TESTING FOR ACCOUNTING APPROVAL', '2025-10-09 12:06:57', '2025-10-09 12:07:30'),
+(10, 'SUB-20251010-001-7979', NULL, 1, 1, '2025-10-10', 1111.00, 1123123.00, 12312.00, 123.00, 1136669.00, 1123.00, 1135546.00, 'draft', NULL, NULL, NULL, NULL, '', '2025-10-10 03:42:53', '2025-10-10 03:42:53');
+
 -- --------------------------------------------------------
 
 --
@@ -66,6 +99,20 @@ CREATE TABLE `expenses` (
   `receipt_file` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `expenses`
+--
+
+INSERT INTO `expenses` (`id`, `submission_id`, `expense_category_id`, `amount`, `description`, `receipt_file`, `created_at`) VALUES
+(8, 7, 8, 30.00, '', 'SUB-20251009-001-1E19_68e7774c34946.png', '2025-10-09 08:50:20'),
+(9, 8, 5, 12312.00, '', 'SUB-20251009-002-1015_68e78d0362af0.png', '2025-10-09 10:22:59'),
+(10, 8, 8, 123.00, '', 'SUB-20251009-002-1015_68e78d0364d19.png', '2025-10-09 10:22:59'),
+(11, 8, 12, 12312.00, '', 'SUB-20251009-002-1015_68e78d03658cb.png', '2025-10-09 10:22:59'),
+(12, 8, 17, 123123.00, '', 'SUB-20251009-002-1015_68e78d03675db.png', '2025-10-09 10:22:59'),
+(13, 9, 19, 1212.00, 'claimed', 'SUB-20251009-003-FAE3_68e7a56106682.png', '2025-10-09 12:06:57'),
+(14, 9, 18, 1231.00, 'claimed', 'SUB-20251009-003-FAE3_68e7a56106fac.png', '2025-10-09 12:06:57'),
+(15, 10, 19, 1123.00, '', 'SUB-20251010-001-7979_68e880bd3ba83.png', '2025-10-10 03:42:53');
 
 -- --------------------------------------------------------
 
@@ -103,7 +150,9 @@ INSERT INTO `expense_categories` (`id`, `category_name`, `category_type`, `descr
 (14, 'Market Rent', 'market', 'Market stall rental', 'active', '2025-10-08 10:11:53'),
 (15, 'Market Utilities', 'market', 'Market utilities and services', 'active', '2025-10-08 10:11:53'),
 (16, 'Market Supplies', 'market', 'Market operational supplies', 'active', '2025-10-08 10:11:53'),
-(17, 'Market Miscellaneous', 'market', 'Other market expenses', 'active', '2025-10-08 10:11:53');
+(17, 'Market Miscellaneous', 'market', 'Other market expenses', 'active', '2025-10-08 10:11:53'),
+(18, 'MP', 'mp_berhad', 'MP claimed expenses', 'active', '2025-10-09 12:05:33'),
+(19, 'BERHAD', 'mp_berhad', 'BERHAD claimed expenses', 'active', '2025-10-09 12:05:33');
 
 -- --------------------------------------------------------
 
@@ -156,14 +205,24 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `username`, `password_hash`, `role`, `status`, `last_login`, `created_at`, `updated_at`) VALUES
-(1, 'Chris Manager ', 'manager@mysite.com', 'manager', '$argon2id$v=19$m=65536,t=4,p=1$eWpaazhXaWdrWk41eU4yTw$3MTO2I4nskA8Wc3Q5XltOdhj8m4BkuIuFs1ZMacXeTE', 'manager', 'active', '2025-10-09 15:58:23', '2025-10-08 08:55:51', '2025-10-09 07:58:23'),
-(2, 'Sarah Accountant', 'account@mysite.com', 'accountant', '$argon2id$v=19$m=65536,t=4,p=1$TFhid1YvMzl1bTJEU1kyTw$XQ+TLktwyfL/goKrb2v33g7d10gy5bTx5j++8icehuA', 'account', 'active', '2025-10-08 18:29:05', '2025-10-08 08:55:51', '2025-10-08 10:29:05'),
+(1, 'Chris Manager ', 'manager@mysite.com', 'manager', '$argon2id$v=19$m=65536,t=4,p=1$eWpaazhXaWdrWk41eU4yTw$3MTO2I4nskA8Wc3Q5XltOdhj8m4BkuIuFs1ZMacXeTE', 'manager', 'active', '2025-10-10 19:26:46', '2025-10-08 08:55:51', '2025-10-10 11:26:46'),
+(2, 'Sarah Accountant', 'account@mysite.com', 'accountant', '$argon2id$v=19$m=65536,t=4,p=1$TFhid1YvMzl1bTJEU1kyTw$XQ+TLktwyfL/goKrb2v33g7d10gy5bTx5j++8icehuA', 'account', 'active', '2025-10-10 19:27:40', '2025-10-08 08:55:51', '2025-10-10 11:27:40'),
 (3, 'Michael CEO', 'ceo@mysite.com', 'ceo', '$argon2id$v=19$m=65536,t=4,p=1$VWl6T1hCR1VBeUJPWnpZWg$jrrmxzG7FPNNvcucr16l9xKZCcOjgwPxs7e1hfv4AE4', 'ceo', 'active', '2025-10-08 17:13:24', '2025-10-08 08:55:52', '2025-10-08 09:13:24'),
 (4, 'Admin User', 'admin@mysite.com', 'admin', '$argon2id$v=19$m=65536,t=4,p=1$Q1lncURyUHc2Ly5XNlRHRA$fgUoE2zJmmThayhC2TAKIs+G/9Qx3S2nv9X1E++QcD4', 'admin', 'active', NULL, '2025-10-08 08:55:53', '2025-10-08 08:55:53');
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `berhad_external_sales_data`
+--
+ALTER TABLE `berhad_external_sales_data`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_submission_row` (`submission_id`,`row_index`),
+  ADD KEY `idx_submission` (`submission_id`),
+  ADD KEY `idx_agent_submission` (`agent_identifier`,`submission_id`),
+  ADD KEY `fk_external_sales_saved_by` (`saved_by`);
 
 --
 -- Indexes for table `daily_submissions`
@@ -221,22 +280,28 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `berhad_external_sales_data`
+--
+ALTER TABLE `berhad_external_sales_data`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `daily_submissions`
 --
 ALTER TABLE `daily_submissions`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `expenses`
 --
 ALTER TABLE `expenses`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `expense_categories`
 --
 ALTER TABLE `expense_categories`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `outlets`
@@ -253,6 +318,13 @@ ALTER TABLE `users`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `berhad_external_sales_data`
+--
+ALTER TABLE `berhad_external_sales_data`
+  ADD CONSTRAINT `fk_external_sales_saved_by` FOREIGN KEY (`saved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_external_sales_submission` FOREIGN KEY (`submission_id`) REFERENCES `daily_submissions` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `daily_submissions`
