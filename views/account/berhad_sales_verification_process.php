@@ -489,11 +489,14 @@ if ($submission) {
                                     <th>Total</th>
                                 </tr>
                             </thead>
-                            <tbody id="external-sales-template-body"></tbody>
+                            <tbody id="external-sales-template-body">
+                                <tr>
+                                    <td colspan="8">
+                                        <div class="empty-state">Paste the raw sales data to preview it as a comparison table.</div>
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
-                    </div>
-                    <div id="external-sales-preview" class="comparison-preview">
-                        <div class="empty-state">Paste the raw sales data to preview it as a comparison table.</div>
                     </div>
                 </div>
             </div>
@@ -519,13 +522,42 @@ if ($submission) {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const textarea = document.getElementById('external-sales-data');
-            const preview = document.getElementById('external-sales-preview');
+            const templateBody = document.getElementById('external-sales-template-body');
+            const templateTable = templateBody ? templateBody.closest('table') : null;
+            const headerCells = templateTable ? Array.from(templateTable.querySelectorAll('thead th')) : [];
+            const defaultHeaders = headerCells.map(function (th) {
+                return th.textContent;
+            });
 
-            if (!textarea || !preview) {
+            if (!textarea || !templateBody || !templateTable || !headerCells.length) {
                 return;
             }
 
-            const emptyMessage = '<div class="empty-state">Paste the raw sales data to preview it as a comparison table.</div>';
+            const emptyMessage = 'Paste the raw sales data to preview it as a comparison table.';
+
+            function appendEmptyRow(message) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                const wrapper = document.createElement('div');
+
+                td.colSpan = headerCells.length || 1;
+                wrapper.className = 'empty-state';
+                wrapper.textContent = message;
+                td.appendChild(wrapper);
+                tr.appendChild(td);
+
+                templateBody.appendChild(tr);
+            }
+
+            function resetTemplate(message) {
+                headerCells.forEach(function (th, index) {
+                    const fallback = defaultHeaders[index] || ('Column ' + (index + 1));
+                    th.textContent = fallback;
+                });
+
+                templateBody.innerHTML = '';
+                appendEmptyRow(message);
+            }
 
             function detectDelimiter(lines) {
                 const delimiters = ['\t', ',', ';', '|'];
@@ -591,56 +623,43 @@ if ($submission) {
             }
 
             function renderTable(rows) {
-                preview.innerHTML = '';
-
                 if (!rows.length) {
-                    preview.innerHTML = emptyMessage;
+                    resetTemplate(emptyMessage);
                     return;
                 }
 
-                const table = document.createElement('table');
-                const thead = document.createElement('thead');
-                const tbody = document.createElement('tbody');
+                const headerValues = rows[0] || [];
 
-                const maxColumns = rows.reduce(function (max, row) {
-                    return Math.max(max, row.length);
-                }, 0);
-
-                const headerRow = document.createElement('tr');
-                const headerCells = rows[0].slice();
-
-                while (headerCells.length < maxColumns) {
-                    headerCells.push('Column ' + (headerCells.length + 1));
-                }
-
-                headerCells.forEach(function (cell, index) {
-                    const th = document.createElement('th');
-                    th.textContent = cell || 'Column ' + (index + 1);
-                    headerRow.appendChild(th);
+                headerCells.forEach(function (th, index) {
+                    const fallback = defaultHeaders[index] || ('Column ' + (index + 1));
+                    const value = headerValues[index];
+                    th.textContent = value && value.length ? value : fallback;
                 });
 
-                thead.appendChild(headerRow);
+                const dataRows = rows.slice(1);
+                templateBody.innerHTML = '';
 
-                rows.slice(1).forEach(function (row) {
+                if (!dataRows.length) {
+                    appendEmptyRow('No data rows were detected after the header row.');
+                    return;
+                }
+
+                dataRows.forEach(function (row) {
                     const tr = document.createElement('tr');
-                    for (let i = 0; i < maxColumns; i += 1) {
+                    for (let i = 0; i < headerCells.length; i += 1) {
                         const td = document.createElement('td');
                         td.textContent = row[i] || '';
                         tr.appendChild(td);
                     }
-                    tbody.appendChild(tr);
+                    templateBody.appendChild(tr);
                 });
-
-                table.appendChild(thead);
-                table.appendChild(tbody);
-                preview.appendChild(table);
             }
 
             function updatePreview() {
                 const raw = textarea.value.trim();
 
                 if (!raw) {
-                    preview.innerHTML = emptyMessage;
+                    resetTemplate(emptyMessage);
                     return;
                 }
 
@@ -651,7 +670,7 @@ if ($submission) {
                 });
 
                 if (!lines.length) {
-                    preview.innerHTML = emptyMessage;
+                    resetTemplate(emptyMessage);
                     return;
                 }
 
