@@ -64,7 +64,7 @@ $totalMpBerhadExpenses = 0.0;
 
 if ($submission) {
     $expenseRows = dbFetchAll(
-        "SELECT e.id, e.amount, e.notes, e.created_at
+        "SELECT e.id, e.amount, e.description, e.created_at
          FROM expenses e
          INNER JOIN expense_categories ec ON e.expense_category_id = ec.id
          WHERE e.submission_id = ?
@@ -340,7 +340,7 @@ if ($submission) {
                             <tr>
                                 <th>Date Recorded</th>
                                 <th>Amount (RM)</th>
-                                <th>Notes</th>
+                                <th>Description</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -348,7 +348,7 @@ if ($submission) {
                                 <tr>
                                     <td><?php echo htmlspecialchars(date('F j, Y g:i A', strtotime($expense['created_at']))); ?></td>
                                     <td>RM <?php echo number_format((float) $expense['amount'], 2); ?></td>
-                                    <td><?php echo htmlspecialchars($expense['notes'] ?? '—'); ?></td>
+                                    <td><?php echo htmlspecialchars($expense['description'] ?? '—'); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
