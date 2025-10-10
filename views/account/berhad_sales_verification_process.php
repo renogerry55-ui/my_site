@@ -642,14 +642,15 @@ if ($submission) {
                         data-manager-net-amount="<?php echo htmlspecialchars(number_format((float) ($submission['net_amount'] ?? 0), 2, '.', '')); ?>"><?php echo htmlspecialchars($externalSalesRawData); ?></textarea>
                     <div class="comparison-template">
                         <h3>External Sales Template</h3>
-                        <p class="template-note">Match the pasted data to these eight columns for a consistent review format.</p>
+                        <p class="template-note">Match the pasted data to these nine columns for a consistent review format.</p>
                         <table>
                             <thead>
                                 <tr>
                                     <th>Agent</th>
-                                    <th>Name</th>
+                                    <th>Outlet Name</th>
                                     <th>Level</th>
-                                    <th>Deposit Count</th>
+                                    <th>Deposit</th>
+                                    <th>Count</th>
                                     <th>Total Deposit</th>
                                     <th>Withdraw Count</th>
                                     <th>Total Withdraw</th>
@@ -658,7 +659,7 @@ if ($submission) {
                             </thead>
                             <tbody id="external-sales-template-body">
                                 <tr>
-                                    <td colspan="8">
+                                    <td colspan="9">
                                         <div class="empty-state">Paste the raw sales data to preview it as a comparison table.</div>
                                     </td>
                                 </tr>
@@ -1230,6 +1231,96 @@ if ($submission) {
                 const finish = function () {
                     isSaving = false;
                     updateSaveAvailability();
+                };
+
+                fetch(saveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: params.toString()
+                })
+                    .then(function (response) {
+                        return response.json()
+                            .then(function (data) {
+                                return { ok: response.ok, data: data };
+                            })
+                            .catch(function () {
+                                return { ok: response.ok, data: null };
+                            });
+                    })
+                    .then(function (result) {
+                        const data = result && result.data ? result.data : {};
+
+                        if (data.csrf_token) {
+                            updateCsrfToken(data.csrf_token);
+                        }
+
+                        if (!result || !result.ok || !data.success) {
+                            const errorMessage = data && data.message ? data.message : 'Unable to save external sales data.';
+                            setFeedback('error', errorMessage);
+                            finish();
+                            return;
+                        }
+
+                        setFeedback('success', data.message || 'External sales data saved successfully.');
+
+                        if (lastSavedNote) {
+                            const savedAt = data.saved_at_display || '';
+                            const savedBy = data.saved_by || '';
+
+                            if (savedAt) {
+                                let label = 'Last saved on ' + savedAt;
+                                if (savedBy) {
+                                    label += ' by ' + savedBy;
+                                }
+                                label += '.';
+
+                                lastSavedNote.textContent = label;
+                                lastSavedNote.hidden = false;
+                            }
+                        }
+
+                        updatePreview();
+                        finish();
+                    })
+                    .catch(function () {
+                        setFeedback('error', 'An unexpected error occurred while saving.');
+                        finish();
+                    });
+            }
+
+            function handleSave() {
+                if (!textarea || !saveButton) {
+                    return;
+                }
+
+                const saveUrl = textarea.dataset.saveUrl || '';
+                const submissionId = textarea.dataset.submissionId || '';
+                const csrfName = textarea.dataset.csrfName || '';
+                const csrfToken = textarea.dataset.csrfToken || '';
+
+                if (!saveUrl || !submissionId) {
+                    setFeedback('error', 'Saving is not configured for this submission.');
+                    return;
+                }
+
+                const params = new URLSearchParams();
+                params.append('submission_id', submissionId);
+                params.append('raw_data', textarea.value);
+                params.append('structured_rows', JSON.stringify(latestParsedRows));
+
+                if (csrfName && csrfToken) {
+                    params.append(csrfName, csrfToken);
+                }
+
+                saveButton.disabled = true;
+                setFeedback('saving', 'Saving external sales data...');
+
+                const finish = function () {
+                    if (saveButton) {
+                        saveButton.disabled = false;
+                    }
                 };
 
                 fetch(saveUrl, {
