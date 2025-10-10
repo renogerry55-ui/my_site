@@ -534,6 +534,7 @@ if ($submission) {
             }
 
             const emptyMessage = 'Paste the raw sales data to preview it as a comparison table.';
+            const noDataMessage = 'No data is available to display.';
 
             function appendEmptyRow(message) {
                 const tr = document.createElement('tr');
@@ -624,27 +625,18 @@ if ($submission) {
 
             function renderTable(rows) {
                 if (!rows.length) {
-                    resetTemplate(emptyMessage);
+                    resetTemplate(noDataMessage);
                     return;
                 }
-
-                const headerValues = rows[0] || [];
 
                 headerCells.forEach(function (th, index) {
                     const fallback = defaultHeaders[index] || ('Column ' + (index + 1));
-                    const value = headerValues[index];
-                    th.textContent = value && value.length ? value : fallback;
+                    th.textContent = fallback;
                 });
 
-                const dataRows = rows.slice(1);
                 templateBody.innerHTML = '';
 
-                if (!dataRows.length) {
-                    appendEmptyRow('No data rows were detected after the header row.');
-                    return;
-                }
-
-                dataRows.forEach(function (row) {
+                rows.forEach(function (row) {
                     const tr = document.createElement('tr');
                     for (let i = 0; i < headerCells.length; i += 1) {
                         const td = document.createElement('td');
