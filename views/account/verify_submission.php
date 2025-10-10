@@ -37,40 +37,44 @@ $pendingRows = dbFetchAll(
 
 $managers = [];
 $submissionIds = [];
-$incomeStreams = [
+$incomeStreamConfig = [
     'berhad' => [
         'label'       => 'Berhad Sales',
-        'total'       => 0,
-        'count'       => 0,
+        'field'       => 'berhad_sales',
         'url'         => 'berhad_sales_verification.php',
         'description' => 'Review Berhad income submissions by outlet.',
         'disabled'    => false,
     ],
     'mp_coba' => [
         'label'       => 'MP Coba Sales',
-        'total'       => 0,
-        'count'       => 0,
+        'field'       => 'mp_coba_sales',
         'url'         => '#',
         'description' => 'MP Coba verification workflow is under construction.',
         'disabled'    => true,
     ],
     'mp_perdana' => [
         'label'       => 'MP Perdana Sales',
-        'total'       => 0,
-        'count'       => 0,
+        'field'       => 'mp_perdana_sales',
         'url'         => '#',
         'description' => 'MP Perdana verification workflow is under construction.',
         'disabled'    => true,
     ],
     'market' => [
         'label'       => 'Market Sales',
-        'total'       => 0,
-        'count'       => 0,
+        'field'       => 'market_sales',
         'url'         => '#',
         'description' => 'Market sales verification workflow is under construction.',
         'disabled'    => true,
     ],
 ];
+
+$incomeStreamDefaults = [];
+
+foreach ($incomeStreamConfig as $key => $streamConfig) {
+    $incomeStreamDefaults[$key] = $streamConfig;
+    $incomeStreamDefaults[$key]['total'] = 0;
+    $incomeStreamDefaults[$key]['count'] = 0;
+}
 
 if ($pendingRows) {
     foreach ($pendingRows as $row) {
@@ -91,7 +95,8 @@ if ($pendingRows) {
                 'market_expenses'    => 0,
                 'earliest_date'  => $row['submission_date'],
                 'latest_date'    => $row['submission_date'],
-                'submissions'    => []
+                'submissions'    => [],
+                'income_streams' => $incomeStreamDefaults,
             ];
         }
 
@@ -106,22 +111,15 @@ if ($pendingRows) {
         $managers[$managerId]['earliest_date'] = min($managers[$managerId]['earliest_date'], $row['submission_date']);
         $managers[$managerId]['latest_date'] = max($managers[$managerId]['latest_date'], $row['submission_date']);
 
-        $incomeStreams['berhad']['total'] += (float) $row['berhad_sales'];
-        $incomeStreams['mp_coba']['total'] += (float) $row['mp_coba_sales'];
-        $incomeStreams['mp_perdana']['total'] += (float) $row['mp_perdana_sales'];
-        $incomeStreams['market']['total'] += (float) $row['market_sales'];
+        foreach ($incomeStreamConfig as $streamKey => $streamConfig) {
+            $field = $streamConfig['field'];
+            $amount = (float) ($row[$field] ?? 0);
 
-        if ((float) $row['berhad_sales'] > 0) {
-            $incomeStreams['berhad']['count']++;
-        }
-        if ((float) $row['mp_coba_sales'] > 0) {
-            $incomeStreams['mp_coba']['count']++;
-        }
-        if ((float) $row['mp_perdana_sales'] > 0) {
-            $incomeStreams['mp_perdana']['count']++;
-        }
-        if ((float) $row['market_sales'] > 0) {
-            $incomeStreams['market']['count']++;
+            $managers[$managerId]['income_streams'][$streamKey]['total'] += $amount;
+
+            if ($amount > 0) {
+                $managers[$managerId]['income_streams'][$streamKey]['count']++;
+            }
         }
 
         $managers[$managerId]['submissions'][$submissionId] = [
@@ -402,6 +400,24 @@ if (!empty($managers)) {
             margin-bottom: 6px;
         }
 
+        .manager-income-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .manager-income-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #11998e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .manager-income-streams {
+            margin-top: 0;
+        }
+
         .manager-meta {
             font-size: 13px;
             color: #666;
@@ -651,41 +667,8 @@ if (!empty($managers)) {
     <div class="container">
         <div class="page-header">
             <h2>Pending Manager Submissions</h2>
-            <p>Review all pending submissions grouped by manager. Use the income stream cards below to jump straight into targeted verification workflows.</p>
+            <p>Review all pending submissions grouped by manager. Each manager card now includes income stream quick links to jump straight into the relevant verification workflow.</p>
         </div>
-
-        <?php if (!isset($incomeStreams)) { $incomeStreams = []; } ?>
-        <?php if (!empty($incomeStreams)) : ?>
-            <div class="income-streams">
-                <?php foreach ($incomeStreams as $stream) : ?>
-                    <?php
-                        $isDisabled = !empty($stream['disabled']);
-                        $href = $isDisabled ? '#!' : ($stream['url'] ?? '#');
-                        $pendingCount = (int) ($stream['count'] ?? 0);
-                        $amount = (float) ($stream['total'] ?? 0);
-                    ?>
-                    <a
-                        href="<?php echo htmlspecialchars($href); ?>"
-                        class="income-card<?php echo $isDisabled ? ' disabled' : ''; ?>"
-                        <?php if ($isDisabled) : ?>aria-disabled="true"<?php endif; ?>
-                    >
-                        <?php if ($isDisabled) : ?>
-                            <span class="income-card-badge">Coming Soon</span>
-                        <?php endif; ?>
-                        <div class="income-card-title"><?php echo htmlspecialchars($stream['label']); ?></div>
-                        <div class="income-card-value">RM <?php echo number_format($amount, 2); ?></div>
-                        <div class="income-card-meta">
-                            <?php echo $pendingCount; ?> pending <?php echo $pendingCount === 1 ? 'submission' : 'submissions'; ?>
-                        </div>
-                        <?php if (!$isDisabled) : ?>
-                            <div class="income-card-cta">Start verification</div>
-                        <?php else : ?>
-                            <div class="income-card-meta"><?php echo htmlspecialchars($stream['description'] ?? 'Workflow in progress.'); ?></div>
-                        <?php endif; ?>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
 
         <?php if (empty($managers)) : ?>
             <div class="empty-state">
@@ -705,6 +688,47 @@ if (!empty($managers)) {
                                 <div>Submission Range: <?php echo htmlspecialchars(date('M j, Y', strtotime($manager['earliest_date']))); ?> &ndash; <?php echo htmlspecialchars(date('M j, Y', strtotime($manager['latest_date']))); ?></div>
                             </div>
                         </div>
+
+                        <?php if (!empty($manager['income_streams'])) : ?>
+                            <div class="manager-income-section">
+                                <div class="manager-income-title">Income Streams</div>
+                                <div class="income-streams manager-income-streams">
+                                    <?php foreach ($manager['income_streams'] as $stream) : ?>
+                                        <?php
+                                            $isDisabled = !empty($stream['disabled']);
+                                            $href = $isDisabled ? '#!' : ($stream['url'] ?? '#');
+
+                                            if (!$isDisabled && $href !== '#') {
+                                                $separator = strpos($href, '?') === false ? '?' : '&';
+                                                $href .= $separator . 'manager_id=' . (int) $manager['manager_id'];
+                                            }
+
+                                            $pendingCount = (int) ($stream['count'] ?? 0);
+                                            $amount = (float) ($stream['total'] ?? 0);
+                                        ?>
+                                        <a
+                                            href="<?php echo htmlspecialchars($href); ?>"
+                                            class="income-card<?php echo $isDisabled ? ' disabled' : ''; ?>"
+                                            <?php if ($isDisabled) : ?>aria-disabled="true"<?php endif; ?>
+                                        >
+                                            <?php if ($isDisabled) : ?>
+                                                <span class="income-card-badge">Coming Soon</span>
+                                            <?php endif; ?>
+                                            <div class="income-card-title"><?php echo htmlspecialchars($stream['label']); ?></div>
+                                            <div class="income-card-value">RM <?php echo number_format($amount, 2); ?></div>
+                                            <div class="income-card-meta">
+                                                <?php echo $pendingCount; ?> pending <?php echo $pendingCount === 1 ? 'submission' : 'submissions'; ?>
+                                            </div>
+                                            <?php if (!$isDisabled) : ?>
+                                                <div class="income-card-cta">Start verification</div>
+                                            <?php else : ?>
+                                                <div class="income-card-meta"><?php echo htmlspecialchars($stream['description'] ?? 'Workflow in progress.'); ?></div>
+                                            <?php endif; ?>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
                         <div class="manager-summary">
                             <div class="manager-summary-title">Manager Summary</div>
