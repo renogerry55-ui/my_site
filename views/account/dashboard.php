@@ -175,11 +175,6 @@ $user = getCurrentUser();
                 <p>Review and verify manager submissions</p>
             </a>
 
-            <a href="berhad_sales_verification.php" class="link-card">
-                <h3>Berhad Sales Verification</h3>
-                <p>Focus on Berhad income stream checks across pending outlets</p>
-            </a>
-
             <a href="#" class="link-card">
                 <h3>Financial Reports</h3>
                 <p>View and generate financial reports</p>
