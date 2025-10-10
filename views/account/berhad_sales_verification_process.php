@@ -370,10 +370,11 @@ if ($submission) {
 
         .comparison-template table th {
             background-color: #d1fae5;
-            color: #0b7662;
+            color: #065f46;
             font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: normal;
         }
 
         .comparison-template table td {
