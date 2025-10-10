@@ -592,14 +592,15 @@ if ($submission) {
                         data-submission-id="<?php echo (int) $submissionId; ?>"><?php echo htmlspecialchars($externalSalesRawData); ?></textarea>
                     <div class="comparison-template">
                         <h3>External Sales Template</h3>
-                        <p class="template-note">Match the pasted data to these eight columns for a consistent review format.</p>
+                        <p class="template-note">Match the pasted data to these nine columns for a consistent review format.</p>
                         <table>
                             <thead>
                                 <tr>
                                     <th>Agent</th>
-                                    <th>Name</th>
+                                    <th>Outlet Name</th>
                                     <th>Level</th>
-                                    <th>Deposit Count</th>
+                                    <th>Deposit</th>
+                                    <th>Count</th>
                                     <th>Total Deposit</th>
                                     <th>Withdraw Count</th>
                                     <th>Total Withdraw</th>
@@ -608,7 +609,7 @@ if ($submission) {
                             </thead>
                             <tbody id="external-sales-template-body">
                                 <tr>
-                                    <td colspan="8">
+                                    <td colspan="9">
                                         <div class="empty-state">Paste the raw sales data to preview it as a comparison table.</div>
                                     </td>
                                 </tr>
