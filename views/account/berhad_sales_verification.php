@@ -94,7 +94,9 @@ if (!empty($submissionIds)) {
             e.amount
         FROM expenses e
         INNER JOIN expense_categories ec ON e.expense_category_id = ec.id
-        WHERE e.submission_id IN ($placeholders) AND ec.category_type = 'mp_berhad'",
+        WHERE e.submission_id IN ($placeholders)
+          AND ec.category_type = 'mp_berhad'
+          AND UPPER(ec.category_name) = 'BERHAD'",
         $submissionIds
     );
 
