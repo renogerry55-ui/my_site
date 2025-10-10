@@ -489,48 +489,7 @@ if ($submission) {
                                     <th>Total</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td contenteditable="true" aria-label="Agent" data-placeholder="Agent"></td>
-                                    <td contenteditable="true" aria-label="Name" data-placeholder="Name"></td>
-                                    <td contenteditable="true" aria-label="Level" data-placeholder="Level"></td>
-                                    <td contenteditable="true" aria-label="Deposit Count" data-placeholder="Deposit Count"></td>
-                                    <td contenteditable="true" aria-label="Total Deposit" data-placeholder="Total Deposit"></td>
-                                    <td contenteditable="true" aria-label="Withdraw Count" data-placeholder="Withdraw Count"></td>
-                                    <td contenteditable="true" aria-label="Total Withdraw" data-placeholder="Total Withdraw"></td>
-                                    <td contenteditable="true" aria-label="Total" data-placeholder="Total"></td>
-                                </tr>
-                                <tr>
-                                    <td contenteditable="true" aria-label="Agent" data-placeholder="Agent"></td>
-                                    <td contenteditable="true" aria-label="Name" data-placeholder="Name"></td>
-                                    <td contenteditable="true" aria-label="Level" data-placeholder="Level"></td>
-                                    <td contenteditable="true" aria-label="Deposit Count" data-placeholder="Deposit Count"></td>
-                                    <td contenteditable="true" aria-label="Total Deposit" data-placeholder="Total Deposit"></td>
-                                    <td contenteditable="true" aria-label="Withdraw Count" data-placeholder="Withdraw Count"></td>
-                                    <td contenteditable="true" aria-label="Total Withdraw" data-placeholder="Total Withdraw"></td>
-                                    <td contenteditable="true" aria-label="Total" data-placeholder="Total"></td>
-                                </tr>
-                                <tr>
-                                    <td contenteditable="true" aria-label="Agent" data-placeholder="Agent"></td>
-                                    <td contenteditable="true" aria-label="Name" data-placeholder="Name"></td>
-                                    <td contenteditable="true" aria-label="Level" data-placeholder="Level"></td>
-                                    <td contenteditable="true" aria-label="Deposit Count" data-placeholder="Deposit Count"></td>
-                                    <td contenteditable="true" aria-label="Total Deposit" data-placeholder="Total Deposit"></td>
-                                    <td contenteditable="true" aria-label="Withdraw Count" data-placeholder="Withdraw Count"></td>
-                                    <td contenteditable="true" aria-label="Total Withdraw" data-placeholder="Total Withdraw"></td>
-                                    <td contenteditable="true" aria-label="Total" data-placeholder="Total"></td>
-                                </tr>
-                                <tr>
-                                    <td contenteditable="true" aria-label="Agent" data-placeholder="Agent"></td>
-                                    <td contenteditable="true" aria-label="Name" data-placeholder="Name"></td>
-                                    <td contenteditable="true" aria-label="Level" data-placeholder="Level"></td>
-                                    <td contenteditable="true" aria-label="Deposit Count" data-placeholder="Deposit Count"></td>
-                                    <td contenteditable="true" aria-label="Total Deposit" data-placeholder="Total Deposit"></td>
-                                    <td contenteditable="true" aria-label="Withdraw Count" data-placeholder="Withdraw Count"></td>
-                                    <td contenteditable="true" aria-label="Total Withdraw" data-placeholder="Total Withdraw"></td>
-                                    <td contenteditable="true" aria-label="Total" data-placeholder="Total"></td>
-                                </tr>
-                            </tbody>
+                            <tbody id="external-sales-template-body"></tbody>
                         </table>
                     </div>
                     <div id="external-sales-preview" class="comparison-preview">
