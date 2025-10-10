@@ -61,6 +61,9 @@ if (empty($errors)) {
 
 $mpBerhadExpenses = [];
 $totalMpBerhadExpenses = 0.0;
+$externalSalesRawData = '';
+$externalSalesSavedLabel = '';
+$externalSalesCsrfToken = null;
 
 if ($submission) {
     $expenseRows = dbFetchAll(
@@ -79,6 +82,76 @@ if ($submission) {
             $totalMpBerhadExpenses += (float) $expenseRow['amount'];
         }
     }
+
+    $externalSalesTable = dbFetchOne("SHOW TABLES LIKE 'berhad_external_sales_data'");
+
+    if ($externalSalesTable) {
+        $externalSalesRows = dbFetchAll(
+            "SELECT
+                besd.agent_identifier,
+                besd.name,
+                besd.level,
+                besd.deposit_count,
+                besd.total_deposit,
+                besd.withdraw_count,
+                besd.total_withdraw,
+                besd.total
+             FROM berhad_external_sales_data besd
+             WHERE besd.submission_id = ?
+             ORDER BY besd.row_index ASC",
+            [$submissionId]
+        );
+
+        if ($externalSalesRows) {
+            $rowStrings = [];
+
+            foreach ($externalSalesRows as $row) {
+                $cells = [
+                    trim((string) ($row['agent_identifier'] ?? '')),
+                    trim((string) ($row['name'] ?? '')),
+                    trim((string) ($row['level'] ?? '')),
+                    trim((string) ($row['deposit_count'] ?? '')),
+                    trim((string) ($row['total_deposit'] ?? '')),
+                    trim((string) ($row['withdraw_count'] ?? '')),
+                    trim((string) ($row['total_withdraw'] ?? '')),
+                    trim((string) ($row['total'] ?? '')),
+                ];
+
+                $rowStrings[] = implode("\t", $cells);
+            }
+
+            $externalSalesRawData = implode("\n", $rowStrings);
+        }
+
+        $externalSalesLatest = dbFetchOne(
+            "SELECT besd.updated_at, u.name AS saved_by_name
+             FROM berhad_external_sales_data besd
+             LEFT JOIN users u ON besd.saved_by = u.id
+             WHERE besd.submission_id = ?
+             ORDER BY besd.updated_at DESC
+             LIMIT 1",
+            [$submissionId]
+        );
+
+        if ($externalSalesLatest && !empty($externalSalesLatest['updated_at'])) {
+            $timestamp = strtotime($externalSalesLatest['updated_at']);
+
+            if ($timestamp !== false) {
+                $formattedDate = date('F j, Y g:i A', $timestamp);
+                $savedBy = trim((string) ($externalSalesLatest['saved_by_name'] ?? ''));
+
+                $externalSalesSavedLabel = 'Last saved on ' . $formattedDate;
+
+                if ($savedBy !== '') {
+                    $externalSalesSavedLabel .= ' by ' . $savedBy;
+                }
+
+                $externalSalesSavedLabel .= '.';
+            }
+        }
+    }
+
+    $externalSalesCsrfToken = csrfGenerate();
 }
 
 ?>
@@ -297,16 +370,49 @@ if ($submission) {
 
         .comparison-template table th {
             background-color: #d1fae5;
-            color: #0b7662;
+            color: #065f46;
             font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: normal;
         }
 
         .comparison-template table td {
             position: relative;
             min-height: 36px;
             background-color: #fff;
+        }
+
+        .template-actions {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .save-feedback {
+            min-height: 20px;
+            font-size: 14px;
+            color: #0f172a;
+        }
+
+        .save-feedback.saving {
+            color: #0f766e;
+        }
+
+        .save-feedback.success {
+            color: #0b7d69;
+        }
+
+        .save-feedback.error {
+            color: #b91c1c;
+        }
+
+        .last-saved-note {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #475569;
         }
 
         .comparison-template table td:focus-within {
@@ -350,6 +456,11 @@ if ($submission) {
 
         .btn-secondary:hover {
             background-color: #cbd5f5;
+        }
+
+        .btn[disabled] {
+            opacity: 0.65;
+            cursor: not-allowed;
         }
 
         @media (max-width: 640px) {
@@ -472,7 +583,13 @@ if ($submission) {
                         Paste the raw export from the external sales portal. We will automatically convert it into a
                         structured table so you can compare the values against the manager submission.
                     </p>
-                    <textarea id="external-sales-data" placeholder="e.g. Date,Total Sales\n2024-01-01,1520.45"></textarea>
+                    <textarea
+                        id="external-sales-data"
+                        placeholder="e.g. Date,Total Sales\n2024-01-01,1520.45"
+                        data-save-url="/my_site/includes/account/save_berhad_external_sales.php"
+                        data-csrf-name="<?php echo htmlspecialchars(CSRF_TOKEN_NAME); ?>"
+                        data-csrf-token="<?php echo htmlspecialchars((string) $externalSalesCsrfToken); ?>"
+                        data-submission-id="<?php echo (int) $submissionId; ?>"><?php echo htmlspecialchars($externalSalesRawData); ?></textarea>
                     <div class="comparison-template">
                         <h3>External Sales Template</h3>
                         <p class="template-note">Match the pasted data to these eight columns for a consistent review format.</p>
@@ -497,6 +614,15 @@ if ($submission) {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div class="template-actions">
+                        <button type="button" class="btn btn-primary" id="save-external-sales-button">Save External Sales Data</button>
+                        <div id="external-sales-feedback" class="save-feedback" role="status" aria-live="polite"></div>
+                    </div>
+                    <div id="external-sales-last-saved" class="last-saved-note"<?php if (!$externalSalesSavedLabel) : ?> hidden<?php endif; ?>>
+                        <?php if ($externalSalesSavedLabel) : ?>
+                            <?php echo htmlspecialchars($externalSalesSavedLabel); ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -525,15 +651,38 @@ if ($submission) {
             const templateBody = document.getElementById('external-sales-template-body');
             const templateTable = templateBody ? templateBody.closest('table') : null;
             const headerCells = templateTable ? Array.from(templateTable.querySelectorAll('thead th')) : [];
+            const columnCount = headerCells.length;
             const defaultHeaders = headerCells.map(function (th) {
                 return th.textContent;
             });
+            const saveButton = document.getElementById('save-external-sales-button');
+            const feedback = document.getElementById('external-sales-feedback');
+            const lastSavedNote = document.getElementById('external-sales-last-saved');
+            let latestParsedRows = [];
 
-            if (!textarea || !templateBody || !templateTable || !headerCells.length) {
+            if (!textarea || !templateBody || !templateTable || !columnCount) {
                 return;
             }
 
             const emptyMessage = 'Paste the raw sales data to preview it as a comparison table.';
+            const noDataMessage = 'No data is available to display.';
+
+            function setFeedback(state, message) {
+                if (!feedback) {
+                    return;
+                }
+
+                feedback.textContent = message || '';
+                feedback.className = state ? 'save-feedback ' + state : 'save-feedback';
+            }
+
+            function updateCsrfToken(token) {
+                if (!token) {
+                    return;
+                }
+
+                textarea.dataset.csrfToken = token;
+            }
 
             function appendEmptyRow(message) {
                 const tr = document.createElement('tr');
@@ -556,6 +705,7 @@ if ($submission) {
                 });
 
                 templateBody.innerHTML = '';
+                latestParsedRows = [];
                 appendEmptyRow(message);
             }
 
@@ -624,33 +774,31 @@ if ($submission) {
 
             function renderTable(rows) {
                 if (!rows.length) {
-                    resetTemplate(emptyMessage);
+                    resetTemplate(noDataMessage);
                     return;
                 }
-
-                const headerValues = rows[0] || [];
 
                 headerCells.forEach(function (th, index) {
                     const fallback = defaultHeaders[index] || ('Column ' + (index + 1));
-                    const value = headerValues[index];
-                    th.textContent = value && value.length ? value : fallback;
+                    th.textContent = fallback;
                 });
 
-                const dataRows = rows.slice(1);
                 templateBody.innerHTML = '';
+                latestParsedRows = [];
 
-                if (!dataRows.length) {
-                    appendEmptyRow('No data rows were detected after the header row.');
-                    return;
-                }
-
-                dataRows.forEach(function (row) {
+                rows.forEach(function (row) {
                     const tr = document.createElement('tr');
-                    for (let i = 0; i < headerCells.length; i += 1) {
+                    const normalizedRow = [];
+
+                    for (let i = 0; i < columnCount; i += 1) {
                         const td = document.createElement('td');
-                        td.textContent = row[i] || '';
+                        const cellValue = row[i] != null ? String(row[i]).trim() : '';
+                        normalizedRow.push(cellValue);
+                        td.textContent = cellValue;
                         tr.appendChild(td);
                     }
+
+                    latestParsedRows.push(normalizedRow);
                     templateBody.appendChild(tr);
                 });
             }
@@ -682,8 +830,101 @@ if ($submission) {
                 renderTable(parsedRows);
             }
 
+            function handleSave() {
+                if (!textarea || !saveButton) {
+                    return;
+                }
+
+                const saveUrl = textarea.dataset.saveUrl || '';
+                const submissionId = textarea.dataset.submissionId || '';
+                const csrfName = textarea.dataset.csrfName || '';
+                const csrfToken = textarea.dataset.csrfToken || '';
+
+                if (!saveUrl || !submissionId) {
+                    setFeedback('error', 'Saving is not configured for this submission.');
+                    return;
+                }
+
+                const params = new URLSearchParams();
+                params.append('submission_id', submissionId);
+                params.append('raw_data', textarea.value);
+                params.append('structured_rows', JSON.stringify(latestParsedRows));
+
+                if (csrfName && csrfToken) {
+                    params.append(csrfName, csrfToken);
+                }
+
+                saveButton.disabled = true;
+                setFeedback('saving', 'Saving external sales data...');
+
+                const finish = function () {
+                    if (saveButton) {
+                        saveButton.disabled = false;
+                    }
+                };
+
+                fetch(saveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: params.toString()
+                })
+                    .then(function (response) {
+                        return response.json()
+                            .then(function (data) {
+                                return { ok: response.ok, data: data };
+                            })
+                            .catch(function () {
+                                return { ok: response.ok, data: null };
+                            });
+                    })
+                    .then(function (result) {
+                        const data = result && result.data ? result.data : {};
+
+                        if (data.csrf_token) {
+                            updateCsrfToken(data.csrf_token);
+                        }
+
+                        if (!result || !result.ok || !data.success) {
+                            const errorMessage = data && data.message ? data.message : 'Unable to save external sales data.';
+                            setFeedback('error', errorMessage);
+                            finish();
+                            return;
+                        }
+
+                        setFeedback('success', data.message || 'External sales data saved successfully.');
+
+                        if (lastSavedNote) {
+                            const savedAt = data.saved_at_display || '';
+                            const savedBy = data.saved_by || '';
+
+                            if (savedAt) {
+                                let label = 'Last saved on ' + savedAt;
+                                if (savedBy) {
+                                    label += ' by ' + savedBy;
+                                }
+                                label += '.';
+
+                                lastSavedNote.textContent = label;
+                                lastSavedNote.hidden = false;
+                            }
+                        }
+
+                        updatePreview();
+                        finish();
+                    })
+                    .catch(function () {
+                        setFeedback('error', 'An unexpected error occurred while saving.');
+                        finish();
+                    });
+            }
+
             textarea.addEventListener('input', updatePreview);
             textarea.addEventListener('blur', updatePreview);
+            if (saveButton) {
+                saveButton.addEventListener('click', handleSave);
+            }
             updatePreview();
         });
     </script>
