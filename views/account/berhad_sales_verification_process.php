@@ -89,9 +89,8 @@ if ($submission) {
         $externalSalesRows = dbFetchAll(
             "SELECT
                 besd.agent_identifier,
-                besd.outlet_name,
+                besd.name,
                 besd.level,
-                besd.deposit,
                 besd.deposit_count,
                 besd.total_deposit,
                 besd.withdraw_count,
@@ -109,9 +108,8 @@ if ($submission) {
             foreach ($externalSalesRows as $row) {
                 $cells = [
                     trim((string) ($row['agent_identifier'] ?? '')),
-                    trim((string) ($row['outlet_name'] ?? '')),
+                    trim((string) ($row['name'] ?? '')),
                     trim((string) ($row['level'] ?? '')),
-                    trim((string) ($row['deposit'] ?? '')),
                     trim((string) ($row['deposit_count'] ?? '')),
                     trim((string) ($row['total_deposit'] ?? '')),
                     trim((string) ($row['withdraw_count'] ?? '')),
