@@ -652,10 +652,20 @@ if ($submission) {
             const templateBody = document.getElementById('external-sales-template-body');
             const templateTable = templateBody ? templateBody.closest('table') : null;
             const headerCells = templateTable ? Array.from(templateTable.querySelectorAll('thead th')) : [];
-            const columnCount = headerCells.length;
-            const defaultHeaders = headerCells.map(function (th) {
-                return th.textContent;
+            const templateHeaders = [
+                'Agent',
+                'Name',
+                'Level',
+                'Deposit Count',
+                'Total Deposit',
+                'Withdraw Count',
+                'Total Withdraw',
+                'Total'
+            ];
+            const normalizedTemplateHeaders = templateHeaders.map(function (header) {
+                return String(header || '').trim().toLowerCase();
             });
+            const columnCount = headerCells.length || templateHeaders.length;
             const saveButton = document.getElementById('save-external-sales-button');
             const feedback = document.getElementById('external-sales-feedback');
             const lastSavedNote = document.getElementById('external-sales-last-saved');
@@ -667,6 +677,13 @@ if ($submission) {
 
             const emptyMessage = 'Paste the raw sales data to preview it as a comparison table.';
             const noDataMessage = 'No data is available to display.';
+
+            function applyDefaultHeaders() {
+                headerCells.forEach(function (th, index) {
+                    const fallback = templateHeaders[index] || ('Column ' + (index + 1));
+                    th.textContent = fallback;
+                });
+            }
 
             function setFeedback(state, message) {
                 if (!feedback) {
@@ -700,14 +717,37 @@ if ($submission) {
             }
 
             function resetTemplate(message) {
-                headerCells.forEach(function (th, index) {
-                    const fallback = defaultHeaders[index] || ('Column ' + (index + 1));
-                    th.textContent = fallback;
-                });
+                applyDefaultHeaders();
 
                 templateBody.innerHTML = '';
                 latestParsedRows = [];
                 appendEmptyRow(message);
+            }
+
+            function rowMatchesTemplateHeaders(row) {
+                if (!row || !row.length) {
+                    return false;
+                }
+
+                for (let i = 0; i < normalizedTemplateHeaders.length; i += 1) {
+                    const value = String(row[i] != null ? row[i] : '').trim().toLowerCase();
+
+                    if (value !== normalizedTemplateHeaders[i]) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            function hasMeaningfulValue(row) {
+                if (!row || !row.length) {
+                    return false;
+                }
+
+                return row.some(function (cell) {
+                    return String(cell != null ? cell : '').trim() !== '';
+                });
             }
 
             function detectDelimiter(lines) {
@@ -774,20 +814,13 @@ if ($submission) {
             }
 
             function renderTable(rows) {
-                if (!rows.length) {
-                    resetTemplate(noDataMessage);
-                    return;
-                }
-
-                headerCells.forEach(function (th, index) {
-                    const fallback = defaultHeaders[index] || ('Column ' + (index + 1));
-                    th.textContent = fallback;
-                });
-
+                applyDefaultHeaders();
                 templateBody.innerHTML = '';
                 latestParsedRows = [];
 
-                rows.forEach(function (row) {
+                const filteredRows = [];
+
+                rows.forEach(function (row, index) {
                     const tr = document.createElement('tr');
                     const normalizedRow = [];
 
@@ -799,8 +832,25 @@ if ($submission) {
                         tr.appendChild(td);
                     }
 
-                    latestParsedRows.push(normalizedRow);
-                    templateBody.appendChild(tr);
+                    if (index === 0 && rowMatchesTemplateHeaders(normalizedRow)) {
+                        return;
+                    }
+
+                    if (!hasMeaningfulValue(normalizedRow)) {
+                        return;
+                    }
+
+                    filteredRows.push({ row: normalizedRow, element: tr });
+                });
+
+                if (!filteredRows.length) {
+                    appendEmptyRow(noDataMessage);
+                    return;
+                }
+
+                filteredRows.forEach(function (entry) {
+                    latestParsedRows.push(entry.row);
+                    templateBody.appendChild(entry.element);
                 });
             }
 
@@ -926,6 +976,7 @@ if ($submission) {
             if (saveButton) {
                 saveButton.addEventListener('click', handleSave);
             }
+            applyDefaultHeaders();
             updatePreview();
         });
     </script>
