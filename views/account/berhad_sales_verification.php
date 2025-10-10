@@ -350,6 +350,9 @@ $overall['outlet_count'] = count($overallOutletIds);
         .btn-process {
             background-color: #ff9800;
             color: #fff;
+            padding: 8px 14px;
+            font-size: 13px;
+            white-space: nowrap;
         }
 
         .btn-process:hover {
@@ -471,7 +474,6 @@ $overall['outlet_count'] = count($overallOutletIds);
                         <div class="submission-table-wrapper">
                             <div class="submission-table-header">
                                 <div class="submission-table-title">Submission Details</div>
-                                <a href="berhad_sales_verification_process.php" class="btn btn-process">Berhad Sales Verification Process</a>
                             </div>
                             <table class="submission-table">
                                 <thead>
@@ -481,6 +483,7 @@ $overall['outlet_count'] = count($overallOutletIds);
                                         <th>Berhad Sales (RM)</th>
                                         <th>Berhad Player claimed (RM)</th>
                                         <th>Net Amount (RM)</th>
+                                        <th style="width: 160px;">Verification</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -499,6 +502,16 @@ $overall['outlet_count'] = count($overallOutletIds);
                                             <td>RM <?php echo number_format($submission['berhad_sales'], 2); ?></td>
                                             <td>RM <?php echo number_format($submission['mp_berhad_expenses'], 2); ?></td>
                                             <td>RM <?php echo number_format($submission['net_amount'], 2); ?></td>
+                                            <td>
+                                                <?php
+                                                    $processUrl = 'berhad_sales_verification_process.php?' . http_build_query([
+                                                        'manager_id'    => (int) $manager['manager_id'],
+                                                        'outlet_id'     => (int) $submission['outlet_id'],
+                                                        'submission_id' => (int) $submission['id'],
+                                                    ]);
+                                                ?>
+                                                <a href="<?php echo htmlspecialchars($processUrl); ?>" class="btn btn-process">Start Verification</a>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
