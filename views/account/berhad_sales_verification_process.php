@@ -267,6 +267,64 @@ if ($submission) {
             font-size: 13px;
         }
 
+        .comparison-template {
+            margin-top: 24px;
+            padding: 18px 20px;
+            border-radius: 10px;
+            border: 1px solid #c8f7ee;
+            background: #eefdf7;
+        }
+
+        .comparison-template h3 {
+            margin: 0 0 8px;
+            font-size: 16px;
+            color: #0f8f7f;
+        }
+
+        .comparison-template .template-note {
+            margin: 0;
+            font-size: 13px;
+            color: #4b5563;
+        }
+
+        .comparison-template table {
+            margin-top: 14px;
+            background-color: #fff;
+            border: 1px solid #cbd5f5;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-template table th {
+            background-color: #d1fae5;
+            color: #0b7662;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .comparison-template table td {
+            position: relative;
+            min-height: 36px;
+            background-color: #fff;
+        }
+
+        .comparison-template table td:focus-within {
+            box-shadow: inset 0 0 0 2px rgba(17, 153, 142, 0.25);
+            outline: none;
+        }
+
+        .comparison-template table td[contenteditable="true"]:empty::before {
+            content: attr(data-placeholder);
+            color: #94a3b8;
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 13px;
+        }
+
         .btn {
             display: inline-block;
             padding: 10px 18px;
@@ -415,6 +473,66 @@ if ($submission) {
                         structured table so you can compare the values against the manager submission.
                     </p>
                     <textarea id="external-sales-data" placeholder="e.g. Date,Total Sales\n2024-01-01,1520.45"></textarea>
+                    <div class="comparison-template">
+                        <h3>External Sales Template</h3>
+                        <p class="template-note">Match the pasted data to these eight columns for a consistent review format.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Agent</th>
+                                    <th>Name</th>
+                                    <th>Level</th>
+                                    <th>Deposit Count</th>
+                                    <th>Total Deposit</th>
+                                    <th>Withdraw Count</th>
+                                    <th>Total Withdraw</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td contenteditable="true" aria-label="Agent" data-placeholder="Agent"></td>
+                                    <td contenteditable="true" aria-label="Name" data-placeholder="Name"></td>
+                                    <td contenteditable="true" aria-label="Level" data-placeholder="Level"></td>
+                                    <td contenteditable="true" aria-label="Deposit Count" data-placeholder="Deposit Count"></td>
+                                    <td contenteditable="true" aria-label="Total Deposit" data-placeholder="Total Deposit"></td>
+                                    <td contenteditable="true" aria-label="Withdraw Count" data-placeholder="Withdraw Count"></td>
+                                    <td contenteditable="true" aria-label="Total Withdraw" data-placeholder="Total Withdraw"></td>
+                                    <td contenteditable="true" aria-label="Total" data-placeholder="Total"></td>
+                                </tr>
+                                <tr>
+                                    <td contenteditable="true" aria-label="Agent" data-placeholder="Agent"></td>
+                                    <td contenteditable="true" aria-label="Name" data-placeholder="Name"></td>
+                                    <td contenteditable="true" aria-label="Level" data-placeholder="Level"></td>
+                                    <td contenteditable="true" aria-label="Deposit Count" data-placeholder="Deposit Count"></td>
+                                    <td contenteditable="true" aria-label="Total Deposit" data-placeholder="Total Deposit"></td>
+                                    <td contenteditable="true" aria-label="Withdraw Count" data-placeholder="Withdraw Count"></td>
+                                    <td contenteditable="true" aria-label="Total Withdraw" data-placeholder="Total Withdraw"></td>
+                                    <td contenteditable="true" aria-label="Total" data-placeholder="Total"></td>
+                                </tr>
+                                <tr>
+                                    <td contenteditable="true" aria-label="Agent" data-placeholder="Agent"></td>
+                                    <td contenteditable="true" aria-label="Name" data-placeholder="Name"></td>
+                                    <td contenteditable="true" aria-label="Level" data-placeholder="Level"></td>
+                                    <td contenteditable="true" aria-label="Deposit Count" data-placeholder="Deposit Count"></td>
+                                    <td contenteditable="true" aria-label="Total Deposit" data-placeholder="Total Deposit"></td>
+                                    <td contenteditable="true" aria-label="Withdraw Count" data-placeholder="Withdraw Count"></td>
+                                    <td contenteditable="true" aria-label="Total Withdraw" data-placeholder="Total Withdraw"></td>
+                                    <td contenteditable="true" aria-label="Total" data-placeholder="Total"></td>
+                                </tr>
+                                <tr>
+                                    <td contenteditable="true" aria-label="Agent" data-placeholder="Agent"></td>
+                                    <td contenteditable="true" aria-label="Name" data-placeholder="Name"></td>
+                                    <td contenteditable="true" aria-label="Level" data-placeholder="Level"></td>
+                                    <td contenteditable="true" aria-label="Deposit Count" data-placeholder="Deposit Count"></td>
+                                    <td contenteditable="true" aria-label="Total Deposit" data-placeholder="Total Deposit"></td>
+                                    <td contenteditable="true" aria-label="Withdraw Count" data-placeholder="Withdraw Count"></td>
+                                    <td contenteditable="true" aria-label="Total Withdraw" data-placeholder="Total Withdraw"></td>
+                                    <td contenteditable="true" aria-label="Total" data-placeholder="Total"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                     <div id="external-sales-preview" class="comparison-preview">
                         <div class="empty-state">Paste the raw sales data to preview it as a comparison table.</div>
                     </div>
