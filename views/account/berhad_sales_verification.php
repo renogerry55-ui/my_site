@@ -347,6 +347,36 @@ $overall['outlet_count'] = count($overallOutletIds);
             color: white;
         }
 
+        .btn-process {
+            background-color: #ff9800;
+            color: #fff;
+            padding: 8px 14px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .btn-process:hover {
+            background-color: #fb8c00;
+        }
+
+        .submission-table-wrapper {
+            margin-top: 20px;
+        }
+
+        .submission-table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .submission-table-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
         .empty-state {
             background: white;
             border-radius: 10px;
@@ -441,36 +471,52 @@ $overall['outlet_count'] = count($overallOutletIds);
             </div>
                         </div>
 
-                        <table class="submission-table">
-                            <thead>
-                                <tr>
-                                    <th>Outlet</th>
-                                    <th>Submission Date</th>
-                                    <th>Berhad Sales (RM)</th>
-                                    <th>Berhad Player claimed (RM)</th>
-                                    <th>Net Amount (RM)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($manager['submissions'] as $submission) : ?>
+                        <div class="submission-table-wrapper">
+                            <div class="submission-table-header">
+                                <div class="submission-table-title">Submission Details</div>
+                            </div>
+                            <table class="submission-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <strong><?php echo htmlspecialchars($submission['outlet_name']); ?></strong><br>
-                                            <span style="font-size:12px; color:#555;">Code: <?php echo htmlspecialchars($submission['outlet_code']); ?></span>
-                                        </td>
-                                        <td>
-                                            <?php echo htmlspecialchars(date('F j, Y', strtotime($submission['submission_date']))); ?>
-                                            <?php if (!empty($submission['batch_code'])) : ?>
-                                                <br><span style="font-size:12px; color:#555;">Batch: <?php echo htmlspecialchars($submission['batch_code']); ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>RM <?php echo number_format($submission['berhad_sales'], 2); ?></td>
-                                        <td>RM <?php echo number_format($submission['mp_berhad_expenses'], 2); ?></td>
-                                        <td>RM <?php echo number_format($submission['net_amount'], 2); ?></td>
+                                        <th>Outlet</th>
+                                        <th>Submission Date</th>
+                                        <th>Berhad Sales (RM)</th>
+                                        <th>Berhad Player claimed (RM)</th>
+                                        <th>Net Amount (RM)</th>
+                                        <th style="width: 160px;">Verification</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($manager['submissions'] as $submission) : ?>
+                                        <tr>
+                                            <td>
+                                                <strong><?php echo htmlspecialchars($submission['outlet_name']); ?></strong><br>
+                                                <span style="font-size:12px; color:#555;">Code: <?php echo htmlspecialchars($submission['outlet_code']); ?></span>
+                                            </td>
+                                            <td>
+                                                <?php echo htmlspecialchars(date('F j, Y', strtotime($submission['submission_date']))); ?>
+                                                <?php if (!empty($submission['batch_code'])) : ?>
+                                                    <br><span style="font-size:12px; color:#555;">Batch: <?php echo htmlspecialchars($submission['batch_code']); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>RM <?php echo number_format($submission['berhad_sales'], 2); ?></td>
+                                            <td>RM <?php echo number_format($submission['mp_berhad_expenses'], 2); ?></td>
+                                            <td>RM <?php echo number_format($submission['net_amount'], 2); ?></td>
+                                            <td>
+                                                <?php
+                                                    $processUrl = 'berhad_sales_verification_process.php?' . http_build_query([
+                                                        'manager_id'    => (int) $manager['manager_id'],
+                                                        'outlet_id'     => (int) $submission['outlet_id'],
+                                                        'submission_id' => (int) $submission['id'],
+                                                    ]);
+                                                ?>
+                                                <a href="<?php echo htmlspecialchars($processUrl); ?>" class="btn btn-process">Start Verification</a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>
