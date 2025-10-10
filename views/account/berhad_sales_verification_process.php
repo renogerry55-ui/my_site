@@ -218,6 +218,55 @@ if ($submission) {
             margin-top: 24px;
         }
 
+        .comparison-input {
+            margin-top: 24px;
+        }
+
+        .comparison-input label {
+            display: block;
+            font-weight: 600;
+            color: #0f8f7f;
+            margin-bottom: 10px;
+        }
+
+        .comparison-input .helper-text {
+            font-size: 13px;
+            color: #4b5563;
+            margin: 0 0 12px;
+            line-height: 1.5;
+        }
+
+        .comparison-input textarea {
+            width: 100%;
+            min-height: 160px;
+            padding: 14px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid #cbd5f5;
+            border-radius: 8px;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+
+        .comparison-input textarea:focus {
+            outline: none;
+            border-color: #38b2ac;
+            box-shadow: 0 0 0 3px rgba(56, 178, 172, 0.25);
+        }
+
+        .comparison-preview {
+            margin-top: 18px;
+        }
+
+        .comparison-preview table {
+            margin-top: 0;
+        }
+
+        .comparison-preview table th,
+        .comparison-preview table td {
+            font-size: 13px;
+        }
+
         .btn {
             display: inline-block;
             padding: 10px 18px;
@@ -358,6 +407,18 @@ if ($submission) {
                         No MP Berhad expenses have been linked to this submission yet.
                     </div>
                 <?php endif; ?>
+
+                <div class="comparison-input">
+                    <label for="external-sales-data">External Sales Data</label>
+                    <p class="helper-text">
+                        Paste the raw export from the external sales portal. We will automatically convert it into a
+                        structured table so you can compare the values against the manager submission.
+                    </p>
+                    <textarea id="external-sales-data" placeholder="e.g. Date,Total Sales\n2024-01-01,1520.45"></textarea>
+                    <div id="external-sales-preview" class="comparison-preview">
+                        <div class="empty-state">Paste the raw sales data to preview it as a comparison table.</div>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
@@ -377,5 +438,158 @@ if ($submission) {
             </div>
         <?php endif; ?>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const textarea = document.getElementById('external-sales-data');
+            const preview = document.getElementById('external-sales-preview');
+
+            if (!textarea || !preview) {
+                return;
+            }
+
+            const emptyMessage = '<div class="empty-state">Paste the raw sales data to preview it as a comparison table.</div>';
+
+            function detectDelimiter(lines) {
+                const delimiters = ['\t', ',', ';', '|'];
+                let bestDelimiter = ',';
+                let bestScore = 0;
+
+                delimiters.forEach(function (delimiter) {
+                    let matches = 0;
+                    let totalColumns = 0;
+
+                    lines.forEach(function (line) {
+                        if (line.indexOf(delimiter) !== -1) {
+                            matches += 1;
+                            totalColumns += line.split(delimiter).length;
+                        }
+                    });
+
+                    if (matches) {
+                        const averageColumns = totalColumns / matches;
+                        if (averageColumns > bestScore) {
+                            bestScore = averageColumns;
+                            bestDelimiter = delimiter;
+                        }
+                    }
+                });
+
+                if (bestScore === 0) {
+                    return ' ';
+                }
+
+                return bestDelimiter;
+            }
+
+            function parseLine(line, delimiter) {
+                if (delimiter === ' ') {
+                    return line.trim().split(/\s+/);
+                }
+
+                const cells = [];
+                let current = '';
+                let inQuotes = false;
+
+                for (let i = 0; i < line.length; i += 1) {
+                    const char = line[i];
+
+                    if (char === '"') {
+                        if (inQuotes && line[i + 1] === '"') {
+                            current += '"';
+                            i += 1;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (!inQuotes && char === delimiter) {
+                        cells.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+
+                cells.push(current.trim());
+                return cells;
+            }
+
+            function renderTable(rows) {
+                preview.innerHTML = '';
+
+                if (!rows.length) {
+                    preview.innerHTML = emptyMessage;
+                    return;
+                }
+
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+
+                const maxColumns = rows.reduce(function (max, row) {
+                    return Math.max(max, row.length);
+                }, 0);
+
+                const headerRow = document.createElement('tr');
+                const headerCells = rows[0].slice();
+
+                while (headerCells.length < maxColumns) {
+                    headerCells.push('Column ' + (headerCells.length + 1));
+                }
+
+                headerCells.forEach(function (cell, index) {
+                    const th = document.createElement('th');
+                    th.textContent = cell || 'Column ' + (index + 1);
+                    headerRow.appendChild(th);
+                });
+
+                thead.appendChild(headerRow);
+
+                rows.slice(1).forEach(function (row) {
+                    const tr = document.createElement('tr');
+                    for (let i = 0; i < maxColumns; i += 1) {
+                        const td = document.createElement('td');
+                        td.textContent = row[i] || '';
+                        tr.appendChild(td);
+                    }
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                preview.appendChild(table);
+            }
+
+            function updatePreview() {
+                const raw = textarea.value.trim();
+
+                if (!raw) {
+                    preview.innerHTML = emptyMessage;
+                    return;
+                }
+
+                const lines = raw.split(/\r?\n/).map(function (line) {
+                    return line.trim();
+                }).filter(function (line) {
+                    return line.length > 0;
+                });
+
+                if (!lines.length) {
+                    preview.innerHTML = emptyMessage;
+                    return;
+                }
+
+                const delimiter = detectDelimiter(lines);
+                const parsedRows = lines.map(function (line) {
+                    return parseLine(line, delimiter);
+                });
+
+                renderTable(parsedRows);
+            }
+
+            textarea.addEventListener('input', updatePreview);
+            textarea.addEventListener('blur', updatePreview);
+            updatePreview();
+        });
+    </script>
 </body>
 </html>
