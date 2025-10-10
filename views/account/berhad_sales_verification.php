@@ -449,7 +449,6 @@ $overall['outlet_count'] = count($overallOutletIds);
                                     <th>Berhad Sales (RM)</th>
                                     <th>Berhad Player claimed (RM)</th>
                                     <th>Net Amount (RM)</th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -468,9 +467,6 @@ $overall['outlet_count'] = count($overallOutletIds);
                                         <td>RM <?php echo number_format($submission['berhad_sales'], 2); ?></td>
                                         <td>RM <?php echo number_format($submission['mp_berhad_expenses'], 2); ?></td>
                                         <td>RM <?php echo number_format($submission['net_amount'], 2); ?></td>
-                                        <td style="text-align:center;">
-                                            <a class="btn btn-primary" href="outlet_verification.php?submission_id=<?php echo (int) $submission['id']; ?>">Review Outlet</a>
-                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
