@@ -651,7 +651,7 @@ if ($submission) {
             const textarea = document.getElementById('external-sales-data');
             const templateBody = document.getElementById('external-sales-template-body');
             const templateTable = templateBody ? templateBody.closest('table') : null;
-            const headerCells = templateTable ? Array.from(templateTable.querySelectorAll('thead th')) : [];
+            let headerCells = templateTable ? Array.from(templateTable.querySelectorAll('thead th')) : [];
             const templateHeaders = [
                 'Agent',
                 'Name',
@@ -665,7 +665,7 @@ if ($submission) {
             const normalizedTemplateHeaders = templateHeaders.map(function (header) {
                 return String(header || '').trim().toLowerCase();
             });
-            const columnCount = headerCells.length || templateHeaders.length;
+            const columnCount = templateHeaders.length;
             const saveButton = document.getElementById('save-external-sales-button');
             const feedback = document.getElementById('external-sales-feedback');
             const lastSavedNote = document.getElementById('external-sales-last-saved');
@@ -679,10 +679,32 @@ if ($submission) {
             const noDataMessage = 'No data is available to display.';
 
             function applyDefaultHeaders() {
-                headerCells.forEach(function (th, index) {
-                    const fallback = templateHeaders[index] || ('Column ' + (index + 1));
-                    th.textContent = fallback;
+                if (!templateTable) {
+                    return;
+                }
+
+                const headerRow = templateTable.querySelector('thead tr');
+
+                if (!headerRow) {
+                    return;
+                }
+
+                while (headerRow.children.length > templateHeaders.length) {
+                    headerRow.removeChild(headerRow.lastElementChild);
+                }
+
+                templateHeaders.forEach(function (label, index) {
+                    let th = headerRow.children[index];
+
+                    if (!th) {
+                        th = document.createElement('th');
+                        headerRow.appendChild(th);
+                    }
+
+                    th.textContent = label;
                 });
+
+                headerCells = Array.from(headerRow.children);
             }
 
             function setFeedback(state, message) {
@@ -707,7 +729,7 @@ if ($submission) {
                 const td = document.createElement('td');
                 const wrapper = document.createElement('div');
 
-                td.colSpan = headerCells.length || 1;
+                td.colSpan = columnCount || 1;
                 wrapper.className = 'empty-state';
                 wrapper.textContent = message;
                 td.appendChild(wrapper);
