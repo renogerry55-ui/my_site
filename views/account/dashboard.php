@@ -150,6 +150,8 @@ $user = getCurrentUser();
             <h1><?php echo htmlspecialchars(APP_NAME); ?></h1>
             <div class="nav-links">
                 <a href="dashboard.php" class="nav-link">Dashboard</a>
+                <a href="verify_submission.php" class="nav-link">Verify Submissions</a>
+                <a href="berhad_sales_verification.php" class="nav-link">Berhad Sales</a>
                 <a href="/my_site/auth/logout.php" class="logout-btn">Logout</a>
             </div>
         </div>
@@ -172,6 +174,11 @@ $user = getCurrentUser();
             <a href="verify_submission.php" class="link-card">
                 <h3>Verify Submissions</h3>
                 <p>Review and verify manager submissions</p>
+            </a>
+
+            <a href="berhad_sales_verification.php" class="link-card">
+                <h3>Berhad Sales Verification</h3>
+                <p>Focus on Berhad income stream checks across pending outlets</p>
             </a>
 
             <a href="#" class="link-card">
