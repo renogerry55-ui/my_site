@@ -14,6 +14,11 @@ if (isset($_GET['success']) && isset($_GET['code'])) {
     $successMessage = 'Submission created successfully! Code: ' . htmlspecialchars($_GET['code']);
 }
 
+$warningMessage = '';
+if (isset($_GET['warning'])) {
+    $warningMessage = htmlspecialchars($_GET['warning']);
+}
+
 // Fetch manager's submissions with outlet info
 $submissions = dbFetchAll("
     SELECT
@@ -97,6 +102,15 @@ $submissions = dbFetchAll("
             border-radius: 8px;
             margin-bottom: 20px;
             border: 1px solid #c3e6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ffeeba;
         }
 
         .page-header {
@@ -299,6 +313,10 @@ $submissions = dbFetchAll("
     <div class="container">
         <?php if ($successMessage): ?>
             <div class="alert-success"><?php echo $successMessage; ?></div>
+        <?php endif; ?>
+
+        <?php if ($warningMessage): ?>
+            <div class="alert-warning"><?php echo $warningMessage; ?></div>
         <?php endif; ?>
 
         <div class="page-header">

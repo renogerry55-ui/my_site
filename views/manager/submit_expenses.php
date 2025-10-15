@@ -11,6 +11,7 @@ $user = getCurrentUser();
 
 $success = '';
 $error = '';
+$warning = '';
 $debugInfo = [];
 
 // Log every request to see if form is POSTing
@@ -54,27 +55,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
         $debugInfo[] = "✓ CSRF validation passed";
 
         try {
-            // Validate total expenses amount is provided
-            $hasExpenseAmount = isset($_POST['total_expenses_amount']) && !empty($_POST['total_expenses_amount']) && floatval($_POST['total_expenses_amount']) > 0;
+            $totalExpensesAmount = isset($_POST['total_expenses_amount']) ? floatval($_POST['total_expenses_amount']) : 0;
             $hasExpenseReceipts = isset($_FILES['expense_receipts']) && !empty($_FILES['expense_receipts']['name'][0]);
 
-            $debugInfo[] = "Expense amount provided: " . ($hasExpenseAmount ? "YES" : "NO");
-            $debugInfo[] = "Expense receipts uploaded: " . ($hasExpenseReceipts ? "YES" : "NO");
-
-            if (!$hasExpenseAmount) {
-                $error = 'Please enter total expenses amount before submitting.';
-            } elseif (!$hasExpenseReceipts) {
-                $error = 'Please upload at least one receipt/voucher before submitting.';
+            if ($totalExpensesAmount < 0) {
+                $error = 'Total expenses cannot be negative.';
+                $debugInfo[] = "✗ Error: Negative expenses entered";
             } else {
+                $debugInfo[] = "Expense amount provided: " . ($totalExpensesAmount > 0 ? "YES" : "NO");
+                $debugInfo[] = "Expense receipts uploaded: " . ($hasExpenseReceipts ? "YES" : "NO");
+
                 $debugInfo[] = "Calling processSubmission()...";
                 $result = processSubmission($_POST, $_FILES, $user['id']);
                 $debugInfo[] = "processSubmission() returned: " . ($result['success'] ? "SUCCESS" : "FAILED");
 
                 if ($result['success']) {
                     $success = $result['message'] . ' (Code: ' . $result['submission_code'] . ')';
+
+                    if (!empty($result['warnings'])) {
+                        $warning = implode(' ', $result['warnings']);
+                        $debugInfo[] = "⚠️ Warning returned: " . $warning;
+                    }
+
                     $debugInfo[] = "✓ Redirecting to view_history.php";
-                    // Clear form by redirecting
-                    header('Location: view_history.php?success=1&code=' . urlencode($result['submission_code']));
+                    // Clear form by redirecting (carry warning message if present)
+                    $redirectUrl = 'view_history.php?success=1&code=' . urlencode($result['submission_code']);
+                    if (!empty($warning)) {
+                        $redirectUrl .= '&warning=' . urlencode($warning);
+                    }
+                    header('Location: ' . $redirectUrl);
                     exit;
                 } else {
                     $error = $result['message'];
@@ -627,11 +636,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                 <h2>📊 Total Expenses</h2>
                 <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
                     Enter the total expenses amount and upload supporting receipts/documents. Accountant will review and categorize the expenses.
+                    You can save the submission without receipts and upload them later before sending to HQ.
                 </p>
 
                 <div class="form-group">
                     <label>Total Expenses Amount (RM) <span class="required">*</span></label>
-                    <input type="number" name="total_expenses_amount" step="0.01" min="0.01" value="0.00"
+                    <input type="number" name="total_expenses_amount" step="0.01" min="0" value="0.00"
                            class="expense-input"
                            style="font-size: 20px; font-weight: 600; padding: 15px;" required>
                     <small style="color: #666; display: block; margin-top: 8px;">
@@ -640,16 +650,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                 </div>
 
                 <div class="form-group" style="margin-top: 25px;">
-                    <label class="file-upload-label">📎 Upload Receipts / Payment Vouchers <span class="required">*</span></label>
+                    <label class="file-upload-label">📎 Upload Receipts / Payment Vouchers</label>
                     <div class="file-input-wrapper">
                         <input type="file" name="expense_receipts[]"
                                accept="image/*,.pdf"
                                multiple
-                               required
                                id="expenseReceiptsInput">
                     </div>
                     <small style="color: #dc3545; font-weight: 600; display: block; margin-top: 8px;">
-                        ⚠️ Required: Upload PDF or images (JPG, PNG). You can select multiple files. Max 5MB per file.
+                        ⚠️ Upload PDF or images (JPG, PNG). You can select multiple files. Max 5MB per file. If you do not have the receipts yet, you can continue and upload them later.
                     </small>
                     <div id="fileList" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;">
                         <strong>Selected Files:</strong>
@@ -840,22 +849,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                     const expenseAmountInput = document.querySelector('input[name="total_expenses_amount"]');
                     const expenseAmount = expenseAmountInput ? parseFloat(expenseAmountInput.value) : 0;
 
-                    // Validate receipt file is uploaded
-                    const receiptInput = document.getElementById('expenseReceiptsInput');
-                    const hasReceipts = receiptInput && receiptInput.files.length > 0;
-
-                    if (expenseAmount <= 0) {
+                    if (expenseAmount < 0) {
                         e.preventDefault();
-                        alert('Please enter total expenses amount before submitting.');
+                        alert('Total expenses cannot be negative.');
                         expenseAmountInput.focus();
                         return false;
                     }
 
-                    if (!hasReceipts) {
-                        e.preventDefault();
-                        alert('Please upload at least one receipt/voucher before submitting.');
-                        receiptInput.focus();
-                        return false;
+                    // Validate receipt file is uploaded when expenses exist
+                    const receiptInput = document.getElementById('expenseReceiptsInput');
+                    const hasReceipts = receiptInput && receiptInput.files.length > 0;
+
+                    if (expenseAmount > 0 && !hasReceipts) {
+                        const proceed = confirm('You entered expenses but did not attach receipts. You can save the draft now and upload receipts later. Continue?');
+                        if (!proceed) {
+                            e.preventDefault();
+                            receiptInput.focus();
+                            return false;
+                        }
                     }
 
                     console.log('All validations passed, showing loading overlay');
