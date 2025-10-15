@@ -106,13 +106,6 @@ function processSubmission($postData, $filesData, $managerId) {
         $totalExpenses = 0;
         $uploadedReceipts = [];
 
-        // Get uncategorized category ID (ID 20 according to schema)
-        $uncategorizedCategory = dbFetchOne(
-            "SELECT id FROM expense_categories WHERE UPPER(category_name) = 'UNCATEGORIZED' LIMIT 1"
-        );
-
-        $uncategorizedCategoryId = $uncategorizedCategory ? intval($uncategorizedCategory['id']) : 20;
-
         // Get total expense amount from POST (allow 0 when manager is preparing draft)
         if (isset($postData['total_expenses_amount'])) {
             $totalExpenses = max(0, floatval($postData['total_expenses_amount']));
@@ -168,10 +161,12 @@ function processSubmission($postData, $filesData, $managerId) {
                 ? 'Manager submitted total expenses - receipts pending upload'
                 : 'Manager submitted total expenses - pending accountant categorization';
 
+            $aggregateCategoryId = getAggregateExpenseCategoryId($pdo);
+
             $expenseStmt = $pdo->prepare($expenseSql);
             $expenseStmt->execute([
                 'submission_id' => $submissionId,
-                'category_id' => $uncategorizedCategoryId,
+                'category_id' => $aggregateCategoryId,
                 'amount' => $totalExpenses,
                 'description' => $expenseDescription,
                 'receipt_file' => $receiptFilesJson
@@ -255,6 +250,55 @@ function supportsDraftStatus(PDO $pdo) {
     }
 
     return $supportsDraft;
+}
+
+/**
+ * Ensure there is a catch-all expense category to attach the aggregated
+ * manager submission amount to. Older databases may not have this helper
+ * category seeded which would otherwise trigger a foreign key violation.
+ *
+ * @param PDO $pdo
+ * @return int
+ * @throws Exception When a placeholder category cannot be retrieved or created
+ */
+function getAggregateExpenseCategoryId(PDO $pdo) {
+    static $categoryId = null;
+
+    if ($categoryId !== null) {
+        return $categoryId;
+    }
+
+    $categoryName = 'Pending Categorization (Auto)';
+
+    $existing = dbFetchOne(
+        "SELECT id FROM expense_categories WHERE category_name = :name LIMIT 1",
+        ['name' => $categoryName]
+    );
+
+    if ($existing) {
+        $categoryId = (int) $existing['id'];
+        return $categoryId;
+    }
+
+    try {
+        $insert = $pdo->prepare(
+            "INSERT INTO expense_categories (category_name, category_type, description, status)
+             VALUES (:name, :type, :description, 'active')"
+        );
+
+        $insert->execute([
+            'name' => $categoryName,
+            'type' => 'mp_berhad',
+            'description' => 'System generated placeholder for aggregated manager submissions'
+        ]);
+
+        $categoryId = (int) $pdo->lastInsertId();
+    } catch (Exception $e) {
+        error_log('Unable to create aggregate expense category: ' . $e->getMessage());
+        throw new Exception('Failed to prepare expense category for submission. Please contact support.');
+    }
+
+    return $categoryId;
 }
 
 /**
