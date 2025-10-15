@@ -103,10 +103,12 @@ function processSubmission($postData, $filesData, $managerId) {
 
         $uncategorizedCategoryId = $uncategorizedCategory ? intval($uncategorizedCategory['id']) : 20;
 
-        // Get total expense amount from POST
+        // Get total expense amount from POST (allow 0 when manager is preparing draft)
         if (isset($postData['total_expenses_amount'])) {
-            $totalExpenses = floatval($postData['total_expenses_amount']);
+            $totalExpenses = max(0, floatval($postData['total_expenses_amount']));
         }
+
+        $missingReceipts = false;
 
         // Handle multiple receipt uploads
         if (isset($filesData['expense_receipts']) &&
@@ -137,9 +139,12 @@ function processSubmission($postData, $filesData, $managerId) {
         }
 
         // Create a single expense entry with all receipts stored as JSON
-        if ($totalExpenses > 0 && !empty($uploadedReceipts)) {
-            // Store all receipt filenames as JSON array
-            $receiptFilesJson = json_encode($uploadedReceipts);
+        if ($totalExpenses > 0) {
+            if (empty($uploadedReceipts)) {
+                $missingReceipts = true;
+            }
+
+            $receiptFilesJson = !empty($uploadedReceipts) ? json_encode($uploadedReceipts) : null;
 
             $expenseSql = "INSERT INTO expenses (
                             submission_id, expense_category_id, amount,
@@ -149,16 +154,18 @@ function processSubmission($postData, $filesData, $managerId) {
                             :description, :receipt_file
                            )";
 
+            $expenseDescription = $missingReceipts
+                ? 'Manager submitted total expenses - receipts pending upload'
+                : 'Manager submitted total expenses - pending accountant categorization';
+
             $expenseStmt = $pdo->prepare($expenseSql);
             $expenseStmt->execute([
                 'submission_id' => $submissionId,
                 'category_id' => $uncategorizedCategoryId,
                 'amount' => $totalExpenses,
-                'description' => 'Manager submitted total expenses - pending accountant categorization',
+                'description' => $expenseDescription,
                 'receipt_file' => $receiptFilesJson
             ]);
-        } elseif ($totalExpenses > 0) {
-            throw new Exception("Total expenses provided but no receipts uploaded.");
         }
 
         // Update submission with total expenses and net amount
@@ -176,11 +183,20 @@ function processSubmission($postData, $filesData, $managerId) {
         // Commit transaction
         $pdo->commit();
 
+        $warnings = [];
+        $message = 'Submission created successfully!';
+
+        if ($missingReceipts) {
+            $warnings[] = 'Expenses were saved without receipts. Upload supporting documents before submitting to HQ.';
+            $message .= ' Receipts are still missing.';
+        }
+
         return [
             'success' => true,
-            'message' => 'Submission created successfully!',
+            'message' => $message,
             'submission_id' => $submissionId,
-            'submission_code' => $submissionCode
+            'submission_code' => $submissionCode,
+            'warnings' => $warnings
         ];
 
     } catch (Exception $e) {
