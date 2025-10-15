@@ -64,7 +64,16 @@ function processSubmission($postData, $filesData, $managerId) {
         // Prepare notes
         $notes = isset($postData['notes']) ? trim($postData['notes']) : null;
 
-        // Insert daily submission (as draft first, will be submitted to HQ later)
+        $warnings = [];
+
+        // Determine which workflow status the table supports (older schemas may not have 'draft')
+        $initialStatus = supportsDraftStatus($pdo) ? 'draft' : 'pending';
+
+        if ($initialStatus !== 'draft') {
+            $warnings[] = 'Draft workflow is not available in this environment. Submission saved as pending for HQ review.';
+        }
+
+        // Insert daily submission (as draft first when available, will be submitted to HQ later)
         $sql = "INSERT INTO daily_submissions (
                     submission_code, outlet_id, manager_id, submission_date,
                     berhad_sales, mp_coba_sales, mp_perdana_sales, market_sales,
@@ -72,7 +81,7 @@ function processSubmission($postData, $filesData, $managerId) {
                 ) VALUES (
                     :submission_code, :outlet_id, :manager_id, :submission_date,
                     :berhad_sales, :mp_coba_sales, :mp_perdana_sales, :market_sales,
-                    :total_income, 0, :net_amount, 'draft', :notes
+                    :total_income, 0, :net_amount, :status, :notes
                 )";
 
         $stmt = $pdo->prepare($sql);
@@ -87,6 +96,7 @@ function processSubmission($postData, $filesData, $managerId) {
             'market_sales' => $marketSales,
             'total_income' => $totalIncome,
             'net_amount' => $totalIncome, // Will be updated after expenses
+            'status' => $initialStatus,
             'notes' => $notes
         ]);
 
@@ -96,17 +106,12 @@ function processSubmission($postData, $filesData, $managerId) {
         $totalExpenses = 0;
         $uploadedReceipts = [];
 
-        // Get uncategorized category ID (ID 20 according to schema)
-        $uncategorizedCategory = dbFetchOne(
-            "SELECT id FROM expense_categories WHERE UPPER(category_name) = 'UNCATEGORIZED' LIMIT 1"
-        );
-
-        $uncategorizedCategoryId = $uncategorizedCategory ? intval($uncategorizedCategory['id']) : 20;
-
-        // Get total expense amount from POST
+        // Get total expense amount from POST (allow 0 when manager is preparing draft)
         if (isset($postData['total_expenses_amount'])) {
-            $totalExpenses = floatval($postData['total_expenses_amount']);
+            $totalExpenses = max(0, floatval($postData['total_expenses_amount']));
         }
+
+        $missingReceipts = false;
 
         // Handle multiple receipt uploads
         if (isset($filesData['expense_receipts']) &&
@@ -137,9 +142,12 @@ function processSubmission($postData, $filesData, $managerId) {
         }
 
         // Create a single expense entry with all receipts stored as JSON
-        if ($totalExpenses > 0 && !empty($uploadedReceipts)) {
-            // Store all receipt filenames as JSON array
-            $receiptFilesJson = json_encode($uploadedReceipts);
+        if ($totalExpenses > 0) {
+            if (empty($uploadedReceipts)) {
+                $missingReceipts = true;
+            }
+
+            $receiptFilesJson = !empty($uploadedReceipts) ? json_encode($uploadedReceipts) : null;
 
             $expenseSql = "INSERT INTO expenses (
                             submission_id, expense_category_id, amount,
@@ -149,16 +157,20 @@ function processSubmission($postData, $filesData, $managerId) {
                             :description, :receipt_file
                            )";
 
+            $expenseDescription = $missingReceipts
+                ? 'Manager submitted total expenses - receipts pending upload'
+                : 'Manager submitted total expenses - pending accountant categorization';
+
+            $aggregateCategoryId = getAggregateExpenseCategoryId($pdo);
+
             $expenseStmt = $pdo->prepare($expenseSql);
             $expenseStmt->execute([
                 'submission_id' => $submissionId,
-                'category_id' => $uncategorizedCategoryId,
+                'category_id' => $aggregateCategoryId,
                 'amount' => $totalExpenses,
-                'description' => 'Manager submitted total expenses - pending accountant categorization',
+                'description' => $expenseDescription,
                 'receipt_file' => $receiptFilesJson
             ]);
-        } elseif ($totalExpenses > 0) {
-            throw new Exception("Total expenses provided but no receipts uploaded.");
         }
 
         // Update submission with total expenses and net amount
@@ -176,11 +188,19 @@ function processSubmission($postData, $filesData, $managerId) {
         // Commit transaction
         $pdo->commit();
 
+        $message = 'Submission created successfully!';
+
+        if ($missingReceipts) {
+            $warnings[] = 'Expenses were saved without receipts. Upload supporting documents before submitting to HQ.';
+            $message .= ' Receipts are still missing.';
+        }
+
         return [
             'success' => true,
-            'message' => 'Submission created successfully!',
+            'message' => $message,
             'submission_id' => $submissionId,
-            'submission_code' => $submissionCode
+            'submission_code' => $submissionCode,
+            'warnings' => $warnings
         ];
 
     } catch (Exception $e) {
@@ -194,6 +214,91 @@ function processSubmission($postData, $filesData, $managerId) {
             'submission_id' => null
         ];
     }
+}
+
+/**
+ * Check if the database schema supports the 'draft' status.
+ * Older installations might still use 'pending' as the default entry state.
+ *
+ * @param PDO $pdo
+ * @return bool
+ */
+function supportsDraftStatus(PDO $pdo) {
+    static $supportsDraft = null;
+
+    if ($supportsDraft !== null) {
+        return $supportsDraft;
+    }
+
+    try {
+        $sql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = 'daily_submissions'
+                  AND COLUMN_NAME = 'status' LIMIT 1";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['schema' => DB_NAME]);
+        $column = $stmt->fetch();
+
+        if ($column && isset($column['COLUMN_TYPE']) && stripos($column['COLUMN_TYPE'], "'draft'") !== false) {
+            $supportsDraft = true;
+        } else {
+            $supportsDraft = false;
+        }
+    } catch (Exception $e) {
+        error_log('Unable to detect draft status support: ' . $e->getMessage());
+        $supportsDraft = false;
+    }
+
+    return $supportsDraft;
+}
+
+/**
+ * Ensure there is a catch-all expense category to attach the aggregated
+ * manager submission amount to. Older databases may not have this helper
+ * category seeded which would otherwise trigger a foreign key violation.
+ *
+ * @param PDO $pdo
+ * @return int
+ * @throws Exception When a placeholder category cannot be retrieved or created
+ */
+function getAggregateExpenseCategoryId(PDO $pdo) {
+    static $categoryId = null;
+
+    if ($categoryId !== null) {
+        return $categoryId;
+    }
+
+    $categoryName = 'Pending Categorization (Auto)';
+
+    $existing = dbFetchOne(
+        "SELECT id FROM expense_categories WHERE category_name = :name LIMIT 1",
+        ['name' => $categoryName]
+    );
+
+    if ($existing) {
+        $categoryId = (int) $existing['id'];
+        return $categoryId;
+    }
+
+    try {
+        $insert = $pdo->prepare(
+            "INSERT INTO expense_categories (category_name, category_type, description, status)
+             VALUES (:name, :type, :description, 'active')"
+        );
+
+        $insert->execute([
+            'name' => $categoryName,
+            'type' => 'mp_berhad',
+            'description' => 'System generated placeholder for aggregated manager submissions'
+        ]);
+
+        $categoryId = (int) $pdo->lastInsertId();
+    } catch (Exception $e) {
+        error_log('Unable to create aggregate expense category: ' . $e->getMessage());
+        throw new Exception('Failed to prepare expense category for submission. Please contact support.');
+    }
+
+    return $categoryId;
 }
 
 /**
