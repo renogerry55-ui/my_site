@@ -64,7 +64,16 @@ function processSubmission($postData, $filesData, $managerId) {
         // Prepare notes
         $notes = isset($postData['notes']) ? trim($postData['notes']) : null;
 
-        // Insert daily submission (as draft first, will be submitted to HQ later)
+        $warnings = [];
+
+        // Determine which workflow status the table supports (older schemas may not have 'draft')
+        $initialStatus = supportsDraftStatus($pdo) ? 'draft' : 'pending';
+
+        if ($initialStatus !== 'draft') {
+            $warnings[] = 'Draft workflow is not available in this environment. Submission saved as pending for HQ review.';
+        }
+
+        // Insert daily submission (as draft first when available, will be submitted to HQ later)
         $sql = "INSERT INTO daily_submissions (
                     submission_code, outlet_id, manager_id, submission_date,
                     berhad_sales, mp_coba_sales, mp_perdana_sales, market_sales,
@@ -72,7 +81,7 @@ function processSubmission($postData, $filesData, $managerId) {
                 ) VALUES (
                     :submission_code, :outlet_id, :manager_id, :submission_date,
                     :berhad_sales, :mp_coba_sales, :mp_perdana_sales, :market_sales,
-                    :total_income, 0, :net_amount, 'draft', :notes
+                    :total_income, 0, :net_amount, :status, :notes
                 )";
 
         $stmt = $pdo->prepare($sql);
@@ -87,6 +96,7 @@ function processSubmission($postData, $filesData, $managerId) {
             'market_sales' => $marketSales,
             'total_income' => $totalIncome,
             'net_amount' => $totalIncome, // Will be updated after expenses
+            'status' => $initialStatus,
             'notes' => $notes
         ]);
 
@@ -183,7 +193,6 @@ function processSubmission($postData, $filesData, $managerId) {
         // Commit transaction
         $pdo->commit();
 
-        $warnings = [];
         $message = 'Submission created successfully!';
 
         if ($missingReceipts) {
@@ -210,6 +219,42 @@ function processSubmission($postData, $filesData, $managerId) {
             'submission_id' => null
         ];
     }
+}
+
+/**
+ * Check if the database schema supports the 'draft' status.
+ * Older installations might still use 'pending' as the default entry state.
+ *
+ * @param PDO $pdo
+ * @return bool
+ */
+function supportsDraftStatus(PDO $pdo) {
+    static $supportsDraft = null;
+
+    if ($supportsDraft !== null) {
+        return $supportsDraft;
+    }
+
+    try {
+        $sql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = 'daily_submissions'
+                  AND COLUMN_NAME = 'status' LIMIT 1";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['schema' => DB_NAME]);
+        $column = $stmt->fetch();
+
+        if ($column && isset($column['COLUMN_TYPE']) && stripos($column['COLUMN_TYPE'], "'draft'") !== false) {
+            $supportsDraft = true;
+        } else {
+            $supportsDraft = false;
+        }
+    } catch (Exception $e) {
+        error_log('Unable to detect draft status support: ' . $e->getMessage());
+        $supportsDraft = false;
+    }
+
+    return $supportsDraft;
 }
 
 /**
