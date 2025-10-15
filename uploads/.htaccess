@@ -1,8 +1,10 @@
-# Deny direct access to files
-# Files can only be accessed through PHP scripts
+# Allow direct access to receipt files for preview
+# Disable directory listing for security
 
 Options -Indexes
+
+# Allow image and PDF files to be accessed directly
 <FilesMatch "\.(jpg|jpeg|png|pdf)$">
-    Order Deny,Allow
-    Deny from all
+    Order Allow,Deny
+    Allow from all
 </FilesMatch>

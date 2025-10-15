@@ -48,16 +48,16 @@ $incomeStreamConfig = [
     'mp_coba' => [
         'label'       => 'MP Coba Sales',
         'field'       => 'mp_coba_sales',
-        'url'         => '#',
-        'description' => 'MP Coba verification workflow is under construction.',
-        'disabled'    => true,
+        'url'         => 'mp_coba_sales_verification.php',
+        'description' => 'Review MP COBA income submissions by outlet.',
+        'disabled'    => false,
     ],
     'mp_perdana' => [
         'label'       => 'MP Perdana Sales',
         'field'       => 'mp_perdana_sales',
-        'url'         => '#',
-        'description' => 'MP Perdana verification workflow is under construction.',
-        'disabled'    => true,
+        'url'         => 'mp_perdana_sales_verification.php',
+        'description' => 'Review MP PERDANA income submissions by outlet.',
+        'disabled'    => false,
     ],
     'market' => [
         'label'       => 'Market Sales',
@@ -698,6 +698,20 @@ if (!empty($managers)) {
                                             <?php endif; ?>
                                         </a>
                                     <?php endforeach; ?>
+
+                                    <!-- Expenses Review Card -->
+                                    <a
+                                        href="expenses_verification.php?manager_id=<?php echo (int) $manager['manager_id']; ?>"
+                                        class="income-card"
+                                        style="background: #fff3e0; border-color: #ffe0b2;"
+                                    >
+                                        <div class="income-card-title" style="color: #e65100;">📋 Expenses Review</div>
+                                        <div class="income-card-value" style="color: #f57c00;">RM <?php echo number_format($manager['total_expenses'], 2); ?></div>
+                                        <div class="income-card-meta" style="color: #666;">
+                                            <?php echo count($manager['submissions']); ?> pending <?php echo count($manager['submissions']) === 1 ? 'submission' : 'submissions'; ?>
+                                        </div>
+                                        <div class="income-card-cta" style="color: #e65100;">Review receipts</div>
+                                    </a>
                                 </div>
                             </div>
                         <?php endif; ?>

@@ -92,68 +92,73 @@ function processSubmission($postData, $filesData, $managerId) {
 
         $submissionId = $pdo->lastInsertId();
 
-        // Process expenses
+        // Process expenses - NEW SIMPLIFIED APPROACH
         $totalExpenses = 0;
-        $expenseTypes = ['mp_berhad', 'market'];
+        $uploadedReceipts = [];
 
-        foreach ($expenseTypes as $type) {
-            if (isset($postData['expenses'][$type]) && is_array($postData['expenses'][$type])) {
-                foreach ($postData['expenses'][$type] as $index => $expense) {
-                    $categoryId = intval($expense['category_id'] ?? 0);
-                    $amount = floatval($expense['amount'] ?? 0);
-                    $description = isset($expense['description']) ? trim($expense['description']) : null;
+        // Get uncategorized category ID (ID 20 according to schema)
+        $uncategorizedCategory = dbFetchOne(
+            "SELECT id FROM expense_categories WHERE UPPER(category_name) = 'UNCATEGORIZED' LIMIT 1"
+        );
 
-                    if ($categoryId <= 0 || $amount <= 0) {
-                        continue; // Skip invalid expenses
-                    }
+        $uncategorizedCategoryId = $uncategorizedCategory ? intval($uncategorizedCategory['id']) : 20;
 
-                    // Handle file upload - PHP structures nested file arrays differently
-                    $receiptFile = null;
+        // Get total expense amount from POST
+        if (isset($postData['total_expenses_amount'])) {
+            $totalExpenses = floatval($postData['total_expenses_amount']);
+        }
 
-                    // Check if file was uploaded for this expense
-                    if (isset($filesData['expenses']) &&
-                        isset($filesData['expenses']['name'][$type][$index]['receipt']) &&
-                        !empty($filesData['expenses']['name'][$type][$index]['receipt'])) {
+        // Handle multiple receipt uploads
+        if (isset($filesData['expense_receipts']) &&
+            is_array($filesData['expense_receipts']['name'])) {
 
-                        $uploadResult = handleReceiptUpload(
-                            $filesData['expenses']['name'][$type][$index]['receipt'],
-                            $filesData['expenses']['tmp_name'][$type][$index]['receipt'],
-                            $filesData['expenses']['size'][$type][$index]['receipt'],
-                            $filesData['expenses']['error'][$type][$index]['receipt'],
-                            $submissionCode
-                        );
+            $fileCount = count($filesData['expense_receipts']['name']);
 
-                        if (!$uploadResult['success']) {
-                            throw new Exception("File upload failed for {$type} expense #{$index}: " . $uploadResult['message']);
-                        }
-
-                        $receiptFile = $uploadResult['filename'];
-                    } else {
-                        // No file uploaded - this is required
-                        throw new Exception("Receipt/voucher is required for all expenses. Missing for {$type} expense #{$index}.");
-                    }
-
-                    // Insert expense
-                    $expenseSql = "INSERT INTO expenses (
-                                    submission_id, expense_category_id, amount,
-                                    description, receipt_file
-                                   ) VALUES (
-                                    :submission_id, :category_id, :amount,
-                                    :description, :receipt_file
-                                   )";
-
-                    $expenseStmt = $pdo->prepare($expenseSql);
-                    $expenseStmt->execute([
-                        'submission_id' => $submissionId,
-                        'category_id' => $categoryId,
-                        'amount' => $amount,
-                        'description' => $description,
-                        'receipt_file' => $receiptFile
-                    ]);
-
-                    $totalExpenses += $amount;
+            for ($i = 0; $i < $fileCount; $i++) {
+                // Skip if no file was uploaded at this index
+                if (empty($filesData['expense_receipts']['name'][$i])) {
+                    continue;
                 }
+
+                $uploadResult = handleReceiptUpload(
+                    $filesData['expense_receipts']['name'][$i],
+                    $filesData['expense_receipts']['tmp_name'][$i],
+                    $filesData['expense_receipts']['size'][$i],
+                    $filesData['expense_receipts']['error'][$i],
+                    $submissionCode
+                );
+
+                if (!$uploadResult['success']) {
+                    throw new Exception("Receipt file #{$i} upload failed: " . $uploadResult['message']);
+                }
+
+                $uploadedReceipts[] = $uploadResult['filename'];
             }
+        }
+
+        // Create a single expense entry with all receipts stored as JSON
+        if ($totalExpenses > 0 && !empty($uploadedReceipts)) {
+            // Store all receipt filenames as JSON array
+            $receiptFilesJson = json_encode($uploadedReceipts);
+
+            $expenseSql = "INSERT INTO expenses (
+                            submission_id, expense_category_id, amount,
+                            description, receipt_file
+                           ) VALUES (
+                            :submission_id, :category_id, :amount,
+                            :description, :receipt_file
+                           )";
+
+            $expenseStmt = $pdo->prepare($expenseSql);
+            $expenseStmt->execute([
+                'submission_id' => $submissionId,
+                'category_id' => $uncategorizedCategoryId,
+                'amount' => $totalExpenses,
+                'description' => 'Manager submitted total expenses - pending accountant categorization',
+                'receipt_file' => $receiptFilesJson
+            ]);
+        } elseif ($totalExpenses > 0) {
+            throw new Exception("Total expenses provided but no receipts uploaded.");
         }
 
         // Update submission with total expenses and net amount

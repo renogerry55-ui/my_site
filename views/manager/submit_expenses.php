@@ -13,6 +13,12 @@ $success = '';
 $error = '';
 $debugInfo = [];
 
+// Log every request to see if form is POSTing
+error_log("===== submit_expenses.php loaded =====");
+error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
+error_log("POST data: " . print_r($_POST, true));
+error_log("submit_daily present: " . (isset($_POST['submit_daily']) ? 'YES' : 'NO'));
+
 // Fetch manager's outlets
 $outlets = dbFetchAll(
     "SELECT * FROM outlets WHERE manager_id = :manager_id AND status = 'active' ORDER BY outlet_name",
@@ -48,21 +54,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
         $debugInfo[] = "✓ CSRF validation passed";
 
         try {
-            // Validate that at least one expense was added
-            $hasExpenses = false;
-            if (isset($_POST['expenses'])) {
-                foreach ($_POST['expenses'] as $type => $expenses) {
-                    if (!empty($expenses)) {
-                        $hasExpenses = true;
-                        break;
-                    }
-                }
-            }
+            // Validate total expenses amount is provided
+            $hasExpenseAmount = isset($_POST['total_expenses_amount']) && !empty($_POST['total_expenses_amount']) && floatval($_POST['total_expenses_amount']) > 0;
+            $hasExpenseReceipts = isset($_FILES['expense_receipts']) && !empty($_FILES['expense_receipts']['name'][0]);
 
-            $debugInfo[] = "Expenses found: " . ($hasExpenses ? "YES" : "NO");
+            $debugInfo[] = "Expense amount provided: " . ($hasExpenseAmount ? "YES" : "NO");
+            $debugInfo[] = "Expense receipts uploaded: " . ($hasExpenseReceipts ? "YES" : "NO");
 
-            if (!$hasExpenses) {
-                $error = 'Please add at least one expense before submitting.';
+            if (!$hasExpenseAmount) {
+                $error = 'Please enter total expenses amount before submitting.';
+            } elseif (!$hasExpenseReceipts) {
+                $error = 'Please upload at least one receipt/voucher before submitting.';
             } else {
                 $debugInfo[] = "Calling processSubmission()...";
                 $result = processSubmission($_POST, $_FILES, $user['id']);
@@ -620,28 +622,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
 
             <div class="section-divider"></div>
 
-            <!-- EXPENSES SECTION - MP/BERHAD -->
+            <!-- EXPENSES SECTION - SIMPLIFIED -->
             <div class="form-card">
-                <h2>📊 Expenses - MP / BERHAD</h2>
-                <p style="color: #666; font-size: 13px; margin-bottom: 15px;">
-                    💡 <em>Tip: Click on expense header to collapse/expand. Previous expenses auto-minimize when adding new ones.</em>
+                <h2>📊 Total Expenses</h2>
+                <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
+                    Enter the total expenses amount and upload supporting receipts/documents. Accountant will review and categorize the expenses.
                 </p>
-                <div id="mpBerhadExpenses">
-                    <!-- Expenses will be added dynamically -->
-                </div>
-                <button type="button" class="btn-add" onclick="addExpense('mp_berhad')">+ Add MP/BERHAD Expense</button>
-            </div>
 
-            <!-- EXPENSES SECTION - MARKET -->
-            <div class="form-card">
-                <h2>🏪 Expenses - Market</h2>
-                <p style="color: #666; font-size: 13px; margin-bottom: 15px;">
-                    💡 <em>Tip: Click on expense header to collapse/expand. Previous expenses auto-minimize when adding new ones.</em>
-                </p>
-                <div id="marketExpenses">
-                    <!-- Expenses will be added dynamically -->
+                <div class="form-group">
+                    <label>Total Expenses Amount (RM) <span class="required">*</span></label>
+                    <input type="number" name="total_expenses_amount" step="0.01" min="0.01" value="0.00"
+                           class="expense-input"
+                           style="font-size: 20px; font-weight: 600; padding: 15px;" required>
+                    <small style="color: #666; display: block; margin-top: 8px;">
+                        This amount will be used in calculations and reviewed by the accountant.
+                    </small>
                 </div>
-                <button type="button" class="btn-add" onclick="addExpense('market')">+ Add Market Expense</button>
+
+                <div class="form-group" style="margin-top: 25px;">
+                    <label class="file-upload-label">📎 Upload Receipts / Payment Vouchers <span class="required">*</span></label>
+                    <div class="file-input-wrapper">
+                        <input type="file" name="expense_receipts[]"
+                               accept="image/*,.pdf"
+                               multiple
+                               required
+                               id="expenseReceiptsInput">
+                    </div>
+                    <small style="color: #dc3545; font-weight: 600; display: block; margin-top: 8px;">
+                        ⚠️ Required: Upload PDF or images (JPG, PNG). You can select multiple files. Max 5MB per file.
+                    </small>
+                    <div id="fileList" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;">
+                        <strong>Selected Files:</strong>
+                        <ul id="fileListItems" style="margin: 10px 0 0 20px; padding: 0;"></ul>
+                    </div>
+                </div>
             </div>
 
             <!-- SUMMARY -->
@@ -674,180 +688,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
     </div>
 
     <script>
-        console.log('🔧 JavaScript loaded');
+        console.log('🔧 JavaScript loaded - Simplified Expense Form');
 
-        let mpBerhadCounter = 0;
-        let marketCounter = 0;
+        // File upload preview
+        const fileInput = document.getElementById('expenseReceiptsInput');
+        const fileList = document.getElementById('fileList');
+        const fileListItems = document.getElementById('fileListItems');
 
-        // Expense categories from PHP
-        const mpBerhadCategories = <?php echo json_encode($mpBerhadCategories ?: []); ?>;
-        const marketCategories = <?php echo json_encode($marketCategories ?: []); ?>;
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    // Show file list
+                    fileList.style.display = 'block';
+                    fileListItems.innerHTML = '';
 
-        console.log('📊 MP/BERHAD Categories:', mpBerhadCategories);
-        console.log('🏪 Market Categories:', marketCategories);
+                    // Add each file to the list
+                    Array.from(this.files).forEach((file, index) => {
+                        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                        const li = document.createElement('li');
+                        li.style.marginBottom = '5px';
+                        li.style.color = '#28a745';
+                        li.innerHTML = `<strong>${index + 1}.</strong> ${file.name} <em>(${fileSize} MB)</em>`;
+                        fileListItems.appendChild(li);
+                    });
 
-        // Add expense row
-        function addExpense(type) {
-            console.log('🎯 addExpense() called with type:', type);
-
-            const container = type === 'mp_berhad' ? document.getElementById('mpBerhadExpenses') : document.getElementById('marketExpenses');
-            const categories = type === 'mp_berhad' ? mpBerhadCategories : marketCategories;
-            const counter = type === 'mp_berhad' ? mpBerhadCounter++ : marketCounter++;
-
-            console.log('Container:', container);
-            console.log('Categories:', categories);
-            console.log('Counter:', counter);
-
-            // Collapse all previous expenses in this container
-            const existingExpenses = container.querySelectorAll('.expense-row');
-            existingExpenses.forEach(row => {
-                if (!row.classList.contains('collapsed')) {
-                    row.classList.add('collapsed');
-                    updateExpenseSummary(row);
-                }
-            });
-
-            const expenseRow = document.createElement('div');
-            expenseRow.className = 'expense-row';
-            expenseRow.id = `expense_${type}_${counter}`;
-
-            let categoryOptions = '<option value="">-- Select Category --</option>';
-            categories.forEach(cat => {
-                categoryOptions += `<option value="${cat.id}">${cat.category_name}</option>`;
-            });
-
-            expenseRow.innerHTML = `
-                <div class="expense-row-header" onclick="toggleExpense('${type}', ${counter})">
-                    <div>
-                        <h4>
-                            <span class="toggle-icon">▼</span>
-                            ${type === 'mp_berhad' ? 'MP/BERHAD' : 'Market'} Expense #${counter + 1}
-                        </h4>
-                        <div class="expense-summary"></div>
-                    </div>
-                    <button type="button" class="btn-remove" onclick="event.stopPropagation(); removeExpense('${type}', ${counter})">Remove</button>
-                </div>
-                <div class="expense-body">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Category <span class="required">*</span></label>
-                            <select name="expenses[${type}][${counter}][category_id]" class="expense-category" required>
-                                ${categoryOptions}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Amount (RM) <span class="required">*</span></label>
-                            <input type="number" name="expenses[${type}][${counter}][amount]" step="0.01" min="0.01" class="expense-input" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Description (Optional)</label>
-                        <input type="text" name="expenses[${type}][${counter}][description]" placeholder="Brief description of this expense">
-                    </div>
-                    <div class="form-group">
-                        <label class="file-upload-label">📎 Upload Receipt / Payment Voucher <span class="required">*</span></label>
-                        <div class="file-input-wrapper">
-                            <input type="file" name="expenses[${type}][${counter}][receipt]" accept="image/*,.pdf" required>
-                        </div>
-                        <small style="color: #dc3545; font-weight: 600;">⚠️ Required: JPG, PNG, or PDF (Max 5MB)</small>
-                    </div>
-                </div>
-            `;
-
-            container.appendChild(expenseRow);
-
-            // Add event listeners
-            const amountInput = expenseRow.querySelector('.expense-input');
-            const categorySelect = expenseRow.querySelector('.expense-category');
-            const fileInput = expenseRow.querySelector('input[type="file"]');
-
-            amountInput.addEventListener('input', function() {
-                calculateTotals();
-                updateExpenseSummary(expenseRow);
-            });
-
-            categorySelect.addEventListener('change', function() {
-                updateExpenseSummary(expenseRow);
-            });
-
-            // File upload feedback
-            if (fileInput) {
-                fileInput.addEventListener('change', function() {
-                    const fileWrapper = this.parentElement;
-                    const smallText = fileWrapper.nextElementSibling;
-
-                    if (this.files.length > 0) {
-                        const fileName = this.files[0].name;
-                        const fileSize = (this.files[0].size / 1024 / 1024).toFixed(2);
-
-                        // Change border to green and show success message
-                        this.style.borderColor = '#28a745';
-                        this.style.background = '#f0fff0';
-
-                        if (smallText) {
-                            smallText.style.color = '#28a745';
-                            smallText.innerHTML = `✅ File selected: ${fileName} (${fileSize} MB)`;
-                        }
-                    } else {
-                        // Reset to warning state
-                        this.style.borderColor = '#dc3545';
-                        this.style.background = '#fff5f5';
-
-                        if (smallText) {
-                            smallText.style.color = '#dc3545';
-                            smallText.innerHTML = '⚠️ Required: JPG, PNG, or PDF (Max 5MB)';
-                        }
-                    }
-                });
-            }
-        }
-
-        // Toggle expense expand/collapse
-        function toggleExpense(type, counter) {
-            const row = document.getElementById(`expense_${type}_${counter}`);
-            if (row) {
-                row.classList.toggle('collapsed');
-                if (row.classList.contains('collapsed')) {
-                    updateExpenseSummary(row);
-                }
-            }
-        }
-
-        // Update expense summary when collapsed
-        function updateExpenseSummary(row) {
-            const summaryDiv = row.querySelector('.expense-summary');
-            const categorySelect = row.querySelector('.expense-category');
-            const amountInput = row.querySelector('.expense-input');
-
-            if (summaryDiv && categorySelect && amountInput) {
-                const hasSelectedOption =
-                    categorySelect.selectedIndex !== undefined &&
-                    categorySelect.selectedIndex !== null &&
-                    categorySelect.selectedIndex >= 0 &&
-                    categorySelect.options &&
-                    categorySelect.options.length > categorySelect.selectedIndex;
-                const categoryText = hasSelectedOption
-                    ? categorySelect.options[categorySelect.selectedIndex].text
-                    : 'No category';
-                const amount = parseFloat(amountInput.value) || 0;
-
-                if (categorySelect.value && amount > 0) {
-                    summaryDiv.textContent = `${categoryText} - RM ${amount.toFixed(2)}`;
-                } else if (categorySelect.value) {
-                    summaryDiv.textContent = `${categoryText} - No amount`;
+                    // Change border to green
+                    this.style.borderColor = '#28a745';
+                    this.style.background = '#f0fff0';
                 } else {
-                    summaryDiv.textContent = 'Click to expand and fill details';
+                    // Hide file list
+                    fileList.style.display = 'none';
+                    // Reset to warning state
+                    this.style.borderColor = '#dc3545';
+                    this.style.background = '#fff5f5';
                 }
-            }
-        }
-
-        // Remove expense row
-        function removeExpense(type, counter) {
-            const row = document.getElementById(`expense_${type}_${counter}`);
-            if (row) {
-                row.remove();
-                calculateTotals();
-            }
+            });
         }
 
         // Calculate totals
@@ -859,12 +734,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                 totalIncome += parseFloat(input.value) || 0;
             });
 
-            // Calculate total expenses
-            const expenseInputs = document.querySelectorAll('.expense-input');
-            let totalExpenses = 0;
-            expenseInputs.forEach(input => {
-                totalExpenses += parseFloat(input.value) || 0;
-            });
+            // Get total expenses from single input
+            const expenseInput = document.querySelector('input[name="total_expenses_amount"]');
+            const totalExpenses = expenseInput ? (parseFloat(expenseInput.value) || 0) : 0;
 
             // Calculate net
             const netAmount = totalIncome - totalExpenses;
@@ -944,6 +816,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                 input.addEventListener('input', calculateTotals);
             });
 
+            // Add listener to expense input
+            const expenseInput = document.querySelector('input[name="total_expenses_amount"]');
+            if (expenseInput) {
+                expenseInput.addEventListener('input', calculateTotals);
+            }
+
             // Initial calculation
             calculateTotals();
 
@@ -958,114 +836,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_daily'])) {
                 form.addEventListener('submit', function(e) {
                     console.log('Form submit event triggered');
 
-                    // Validate form has expenses
-                    const mpExpenses = document.getElementById('mpBerhadExpenses').children.length;
-                    const marketExpenses = document.getElementById('marketExpenses').children.length;
+                    // Validate expense amount is entered
+                    const expenseAmountInput = document.querySelector('input[name="total_expenses_amount"]');
+                    const expenseAmount = expenseAmountInput ? parseFloat(expenseAmountInput.value) : 0;
 
-                    console.log('MP expenses:', mpExpenses, 'Market expenses:', marketExpenses);
+                    // Validate receipt file is uploaded
+                    const receiptInput = document.getElementById('expenseReceiptsInput');
+                    const hasReceipts = receiptInput && receiptInput.files.length > 0;
 
-                    if (mpExpenses === 0 && marketExpenses === 0) {
+                    if (expenseAmount <= 0) {
                         e.preventDefault();
-                        alert('Please add at least one expense before submitting.');
-                        console.log('Form submission prevented - no expenses');
+                        alert('Please enter total expenses amount before submitting.');
+                        expenseAmountInput.focus();
                         return false;
                     }
 
-                    // TEMPORARY: Skip detailed validation for testing
-                    console.log('Skipping detailed validation - allowing submission');
-                    return true;
-
-                    /* DETAILED VALIDATION - COMMENTED OUT FOR NOW */
-                    /*
-
-                    // Validate each expense and collect incomplete ones
-                    let incompleteExpenseRows = [];
-                    let errorMessages = [];
-                    const allExpenseRows = document.querySelectorAll('.expense-row');
-
-                    allExpenseRows.forEach((row, index) => {
-                        const categorySelect = row.querySelector('.expense-category');
-                        const amountInput = row.querySelector('.expense-input');
-                        const fileInput = row.querySelector('input[type="file"]');
-                        const expenseHeader = row.querySelector('.expense-row-header h4');
-                        const expenseName = expenseHeader ? expenseHeader.textContent.trim() : `Expense #${index + 1}`;
-
-                        let errors = [];
-
-                        // Check category
-                        if (categorySelect && !categorySelect.value) {
-                            errors.push('Missing category');
-                            categorySelect.style.border = '2px solid #dc3545';
-                            categorySelect.style.background = '#fff5f5';
-                        } else if (categorySelect) {
-                            categorySelect.style.border = '';
-                            categorySelect.style.background = '';
-                        }
-
-                        // Check amount
-                        if (amountInput && (!amountInput.value || parseFloat(amountInput.value) <= 0)) {
-                            errors.push('Missing or invalid amount');
-                            amountInput.style.border = '2px solid #dc3545';
-                            amountInput.style.background = '#fff5f5';
-                        } else if (amountInput) {
-                            amountInput.style.border = '';
-                            amountInput.style.background = '';
-                        }
-
-                        // Check receipt
-                        if (fileInput && fileInput.files.length === 0) {
-                            errors.push('Missing receipt/voucher');
-                            fileInput.style.border = '2px solid #dc3545';
-                            fileInput.style.background = '#fff5f5';
-                        } else if (fileInput) {
-                            fileInput.style.border = '';
-                            fileInput.style.background = '';
-                        }
-
-                        // If this expense has errors, mark it
-                        if (errors.length > 0) {
-                            incompleteExpenseRows.push(row);
-                            errorMessages.push(`${expenseName}: ${errors.join(', ')}`);
-                        }
-                    });
-
-                    if (incompleteExpenseRows.length > 0) {
+                    if (!hasReceipts) {
                         e.preventDefault();
-
-                        // Expand all incomplete expense rows
-                        incompleteExpenseRows.forEach(row => {
-                            row.classList.remove('collapsed');
-                        });
-
-                        // Scroll to the first incomplete expense
-                        if (incompleteExpenseRows[0]) {
-                            incompleteExpenseRows[0].scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center'
-                            });
-
-                            // Flash the first incomplete expense
-                            incompleteExpenseRows[0].style.transition = 'all 0.3s';
-                            incompleteExpenseRows[0].style.border = '3px solid #dc3545';
-                            incompleteExpenseRows[0].style.boxShadow = '0 0 20px rgba(220, 53, 69, 0.5)';
-
-                            setTimeout(() => {
-                                incompleteExpenseRows[0].style.border = '';
-                                incompleteExpenseRows[0].style.boxShadow = '';
-                            }, 2000);
-                        }
-
-                        const message = 'Please Complete All Expense Details!\n\n' +
-                                       `Found ${incompleteExpenseRows.length} incomplete expense(s):\n\n` +
-                                       errorMessages.map((msg, i) => `${i + 1}. ${msg}`).join('\n') +
-                                       '\n\nIncomplete expenses have been expanded and highlighted.\nPlease scroll up to complete them.';
-
-                        alert(message);
-                        console.log('Form submission prevented - incomplete expenses:', errorMessages);
+                        alert('Please upload at least one receipt/voucher before submitting.');
+                        receiptInput.focus();
                         return false;
                     }
-
-                    */
 
                     console.log('All validations passed, showing loading overlay');
 
